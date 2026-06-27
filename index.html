@@ -368,7 +368,10 @@ select option{background:#1a1a2e;color:#fff;}
       Settings
     </div>
 
-    <div class="sidebar-footer">
+    <div style="padding:4px 12px 0;text-align:center;">
+        <div style="font-size:9px;color:var(--t3);">© 2026 Goofify · Gaurav Mokal</div>
+      </div>
+      <div class="sidebar-footer">
       <div class="user-pill">
         <div class="user-av" id="user-av">G</div>
         <div><div class="user-name" id="user-name">Loading…</div><div class="user-role" id="user-role">Admin</div></div>
@@ -2710,25 +2713,5 @@ window.addEventListener('load',()=>{
 });
 </script>
 
-<style>
-.copyright-footer {
-  position: fixed; bottom: 0; left: 0; width: var(--sidebar-w);
-  padding: 5px 14px; font-size: 10px; color: var(--t3);
-  text-align: center; pointer-events: none; z-index: 5;
-}
-</style>
-<div class="copyright-footer" id="copyright-bar" style="display:none;">© 2026 Goofify · Gaurav Mokal</div>
-<script>
-// Show copyright only when app is open
-document.addEventListener('DOMContentLoaded', () => {
-  const obs = new MutationObserver(() => {
-    const shell = document.getElementById('app-shell');
-    const bar = document.getElementById('copyright-bar');
-    if (shell && bar) bar.style.display = shell.style.display !== 'none' ? 'block' : 'none';
-  });
-  const shell = document.getElementById('app-shell');
-  if (shell) obs.observe(shell, { attributes: true, attributeFilter: ['style'] });
-});
-</script>
 </body>
 </html>
