@@ -699,6 +699,100 @@ select option{background:#1a1a2e;color:#fff;}
 </div>
 
 <!-- ============================================================ MODALS ============================================================ -->
+<!-- Share Script Modal -->
+<div class="overlay" id="modal-shareScript">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Share script</div>
+      <button class="modal-close" onclick="closeModal('shareScript')">✕</button>
+    </div>
+    <input type="hidden" id="share-file-id">
+    <input type="hidden" id="share-file-name">
+    <input type="hidden" id="share-topic-id">
+
+    <div style="background:var(--gs);border:1px solid var(--gb);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;font-size:12px;">
+      <span style="color:var(--t3);">File:</span> <span id="share-file-display" style="color:var(--acc-l);font-weight:500;"></span>
+    </div>
+
+    <div class="form-group">
+      <div class="form-label">Access level</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px;">
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--gb);transition:border-color 0.2s;" id="share-opt-restricted" onclick="selectShareLevel('restricted')">
+          <input type="radio" name="share-level" value="restricted" style="width:auto;margin-top:2px;">
+          <div>
+            <div style="font-weight:500;font-size:13px;">🔒 Restricted</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px;">Only specific people you invite can open this</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--gb);transition:border-color 0.2s;" id="share-opt-domain" onclick="selectShareLevel('domain')">
+          <input type="radio" name="share-level" value="domain" style="width:auto;margin-top:2px;">
+          <div>
+            <div style="font-weight:500;font-size:13px;">🏢 Mindbowser only</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px;">Anyone with a @mindbowser.com email can open</div>
+          </div>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--gb);transition:border-color 0.2s;" id="share-opt-anyone" onclick="selectShareLevel('anyone')">
+          <input type="radio" name="share-level" value="anyone" style="width:auto;margin-top:2px;">
+          <div>
+            <div style="font-weight:500;font-size:13px;">🌐 Anyone with link</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px;">Anyone who has the link can open — no sign-in needed</div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Restricted emails input -->
+    <div id="share-emails-wrap" style="display:none;">
+      <div class="form-group">
+        <div class="form-label">Invite people (email addresses)</div>
+        <input id="share-emails" placeholder="leader@mindbowser.com, client@company.com">
+        <div style="font-size:11px;color:var(--t3);margin-top:4px;">Separate multiple emails with commas</div>
+      </div>
+    </div>
+
+    <!-- Permission level -->
+    <div class="form-group">
+      <div class="form-label">They can</div>
+      <select id="share-role" style="width:auto;">
+        <option value="viewer">View only</option>
+        <option value="commenter">Comment (suggest changes)</option>
+      </select>
+    </div>
+
+    <!-- Current share status -->
+    <div id="share-current-status" style="display:none;background:var(--green-g);border:1px solid var(--green);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--green);margin-bottom:12px;"></div>
+
+    <div class="modal-foot">
+      <button class="btn btn-danger btn-sm" onclick="revokeShare()" id="revoke-share-btn" style="margin-right:auto;display:none;">Revoke access</button>
+      <button class="btn" onclick="closeModal('shareScript')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitShare()">Share & copy link</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Script Confirm Modal -->
+<div class="overlay" id="modal-deleteScript">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-head">
+      <div class="modal-title">Delete script permanently</div>
+      <button class="modal-close" onclick="closeModal('deleteScript')">✕</button>
+    </div>
+    <input type="hidden" id="del-script-id">
+    <input type="hidden" id="del-file-id">
+    <input type="hidden" id="del-topic-id">
+    <input type="hidden" id="del-file-name">
+    <div style="background:var(--red-g);border:1px solid var(--red);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;">
+      <div style="font-weight:600;font-size:13px;color:var(--red);margin-bottom:4px;">⚠️ This cannot be undone</div>
+      <div style="font-size:12px;color:var(--t2);">This will permanently delete <strong id="del-file-display"></strong> from both Goofify and Google Drive.</div>
+    </div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:14px;">The topic will be moved back to <strong>Researching</strong> stage so you can upload a new script.</div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('deleteScript')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDeleteScript()">Yes, delete permanently</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- Add Content Type -->
 <div class="overlay" id="modal-addContentType">
@@ -1480,7 +1574,12 @@ async function loadScripts() {
           <td><span class="badge badge-acc" style="font-size:10px;">${s.cluster}</span></td>
           <td>${pfBadge(s.platform)}</td>
           <td>${stageBadge(s.scriptStatus)}</td>
-          <td><a href="${s.driveFileUrl}" target="_blank" class="btn btn-sm">Open ↗</a></td>
+          <td style="white-space:nowrap;display:flex;gap:5px;">
+            <a href="${s.driveFileUrl}" target="_blank" class="btn btn-sm">Open ↗</a>
+            ${IS_GUEST?'':`
+            <button class="btn btn-sm" style="color:var(--blue);border-color:var(--blue);" onclick="openShareModal('${s.driveFileId}','${s.fileName}','${s.topicId}')">Share</button>
+            <button class="btn btn-sm btn-danger" onclick="openDeleteScript('${s.id}','${s.driveFileId}','${s.topicId}','${s.fileName}')">Delete</button>`}
+          </td>
         </tr>`).join('')
       : '<tr><td colspan="8"><div class="empty"><p>No scripts uploaded yet</p></div></td></tr>';
   } catch(e) { toast('Scripts: '+e.message,'err'); }
@@ -1957,6 +2056,120 @@ async function deleteContentType(id) {
   catch(e) { toast(e.message, 'err'); }
 }
 
+
+// ============================================================
+//  SCRIPT SHARING
+// ============================================================
+let currentShareFileId = null;
+
+async function openShareModal(fileId, fileName, topicId) {
+  currentShareFileId = fileId;
+  document.getElementById('share-file-id').value = fileId;
+  document.getElementById('share-file-name').value = fileName;
+  document.getElementById('share-topic-id').value = topicId || '';
+  document.getElementById('share-file-display').textContent = fileName;
+  document.getElementById('share-current-status').style.display = 'none';
+  document.getElementById('revoke-share-btn').style.display = 'none';
+  document.getElementById('share-emails-wrap').style.display = 'none';
+  document.querySelectorAll('input[name="share-level"]').forEach(r => r.checked = false);
+  // Reset border colors
+  ['restricted','domain','anyone'].forEach(l => {
+    document.getElementById('share-opt-'+l).style.borderColor = 'var(--gb)';
+  });
+  // Load current share info
+  try {
+    const info = await api('getScriptShareInfo', { fileId });
+    if (info && !info.error) {
+      let statusText = '';
+      if (info.sharingAccess && info.sharingAccess.includes('ANYONE')) {
+        statusText = '🌐 Currently shared — anyone with link';
+        document.getElementById('revoke-share-btn').style.display = 'inline-flex';
+      } else if (info.sharingAccess && info.sharingAccess.includes('DOMAIN')) {
+        statusText = '🏢 Currently shared — Mindbowser only';
+        document.getElementById('revoke-share-btn').style.display = 'inline-flex';
+      } else if (info.viewers && info.viewers.length > 0) {
+        statusText = '🔒 Shared with: ' + info.viewers.join(', ');
+        document.getElementById('revoke-share-btn').style.display = 'inline-flex';
+      }
+      if (statusText) {
+        document.getElementById('share-current-status').textContent = statusText;
+        document.getElementById('share-current-status').style.display = 'block';
+      }
+    }
+  } catch(e) {}
+  openModal('shareScript');
+}
+
+function selectShareLevel(level) {
+  ['restricted','domain','anyone'].forEach(l => {
+    document.getElementById('share-opt-'+l).style.borderColor = l === level ? 'var(--acc)' : 'var(--gb)';
+  });
+  document.getElementById('share-emails-wrap').style.display = level === 'restricted' ? 'block' : 'none';
+  document.querySelector(`input[name="share-level"][value="${level}"]`).checked = true;
+}
+
+async function submitShare() {
+  const fileId = document.getElementById('share-file-id').value;
+  const fileName = document.getElementById('share-file-name').value;
+  const level = document.querySelector('input[name="share-level"]:checked')?.value;
+  const role = document.getElementById('share-role').value;
+  const emails = document.getElementById('share-emails').value;
+
+  if (!level) { toast('Select an access level', 'err'); return; }
+  if (level === 'restricted' && !emails.trim()) { toast('Enter at least one email address', 'err'); return; }
+
+  try {
+    const result = await apiPost('shareScript', {
+      fileId, fileName, accessLevel: level, role, emails,
+    });
+    // Copy link to clipboard
+    navigator.clipboard.writeText(result.url).then(() => {
+      toast('Link copied to clipboard ✓ — share it with your leader', 'ok');
+    });
+    closeModal('shareScript');
+    // Show what happened
+    if (level === 'restricted') toast('Shared with ' + emails + ' · link copied', 'ok');
+    else if (level === 'domain') toast('Shared with @mindbowser.com · link copied', 'ok');
+    else toast('Anyone with link can now view · link copied', 'ok');
+  } catch(e) { toast('Share failed: ' + e.message, 'err'); }
+}
+
+async function revokeShare() {
+  const fileId = document.getElementById('share-file-id').value;
+  const fileName = document.getElementById('share-file-name').value;
+  if (!confirm('Remove all sharing access from this script?')) return;
+  try {
+    await apiPost('shareScript', { fileId, fileName, accessLevel: 'revoke' });
+    toast('Access revoked — script is now private', 'ok');
+    closeModal('shareScript');
+  } catch(e) { toast('Revoke failed: ' + e.message, 'err'); }
+}
+
+// ============================================================
+//  SCRIPT DELETE — permanently from Drive
+// ============================================================
+function openDeleteScript(scriptId, fileId, topicId, fileName) {
+  document.getElementById('del-script-id').value = scriptId;
+  document.getElementById('del-file-id').value = fileId;
+  document.getElementById('del-topic-id').value = topicId || '';
+  document.getElementById('del-file-name').value = fileName;
+  document.getElementById('del-file-display').textContent = fileName;
+  openModal('deleteScript');
+}
+
+async function confirmDeleteScript() {
+  const id = document.getElementById('del-script-id').value;
+  const fileId = document.getElementById('del-file-id').value;
+  const topicId = document.getElementById('del-topic-id').value;
+  const fileName = document.getElementById('del-file-name').value;
+  try {
+    await apiPost('deleteScriptFull', { id, fileId, topicId, fileName });
+    closeModal('deleteScript');
+    toast('Script permanently deleted from Drive ✓', 'ok');
+    loadScripts();
+  } catch(e) { toast('Delete failed: ' + e.message, 'err'); }
+}
+
 // ============================================================
 //  CHECKLIST
 // ============================================================
@@ -1987,6 +2200,27 @@ window.addEventListener('load',()=>{
   initGoogleAuth();
   const saved=localStorage.getItem('goofify_user');
   if(saved){USER=JSON.parse(saved);enterApp();}
+});
+</script>
+
+<style>
+.copyright-footer {
+  position: fixed; bottom: 0; left: 0; width: var(--sidebar-w);
+  padding: 5px 14px; font-size: 10px; color: var(--t3);
+  text-align: center; pointer-events: none; z-index: 5;
+}
+</style>
+<div class="copyright-footer" id="copyright-bar" style="display:none;">© 2026 Goofify · Gaurav Mokal</div>
+<script>
+// Show copyright only when app is open
+document.addEventListener('DOMContentLoaded', () => {
+  const obs = new MutationObserver(() => {
+    const shell = document.getElementById('app-shell');
+    const bar = document.getElementById('copyright-bar');
+    if (shell && bar) bar.style.display = shell.style.display !== 'none' ? 'block' : 'none';
+  });
+  const shell = document.getElementById('app-shell');
+  if (shell) obs.observe(shell, { attributes: true, attributeFilter: ['style'] });
 });
 </script>
 </body>
