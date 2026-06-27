@@ -1406,11 +1406,21 @@ function renderSearchResults(results) {
 }
 
 function searchJump(section, id, url) {
-  hideSearch();
+  // Clear search
   document.getElementById('gs-input').value = '';
-  if (url && url !== 'undefined') { window.open(url, '_blank'); return; }
-  nav(section);
-  toast('Jumped to ' + section, 'info');
+  document.getElementById('search-results').classList.remove('open');
+  searchResultsData = [];
+
+  // If it's a file URL open in new tab
+  if (url && url !== 'undefined' && url !== '' && url.startsWith('http')) {
+    window.open(url, '_blank');
+    return;
+  }
+
+  // Navigate to the section
+  if (section && section !== 'undefined') {
+    nav(section);
+  }
 }
 
 function showSearch() {
