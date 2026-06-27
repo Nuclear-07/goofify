@@ -600,18 +600,28 @@ select option{background:#1a1a2e;color:#fff;}
 
       <!-- YT CHANNELS -->
       <div class="view" id="view-ytchannels">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <div style="font-size:13px;color:var(--t2);">Manage all YouTube channels — yours and clients. Switch between Auto (API) and Manual mode per channel.</div>
-          <button class="btn btn-primary btn-sm" onclick="openModal('addYTChannel')">+ Add channel</button>
+        <!-- Header -->
+        <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--acc-gl),var(--glass));">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-size:15px;font-weight:700;margin-bottom:4px;">▶ YouTube Channels</div>
+              <div style="font-size:12px;color:var(--t2);">Add your channel + any client channels. Switch between Auto (API) and Manual stats per channel.</div>
+            </div>
+            <button class="btn btn-primary" onclick="openModal('addYTChannel')">+ Add channel</button>
+          </div>
         </div>
-        <div id="yt-channels-grid" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        <!-- Channels grid -->
+        <div id="yt-channels-grid" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;"></div>
 
         <!-- Before/After comparison section -->
-        <div class="div" style="margin:20px 0;"></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-          <div class="sec-head" style="margin:0;">📊 Before / After comparisons</div>
+        <div class="card" style="margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div class="sec-head" style="margin:0;">📊 Before / After comparisons</div>
+            <div style="font-size:12px;color:var(--t3);">Click "📸 Before" on any rework video to start tracking</div>
+          </div>
+          <div id="snapshots-list"></div>
         </div>
-        <div id="snapshots-list"></div>
       </div>
       <!-- REPORTS -->
       <div class="view" id="view-reports">
@@ -1293,7 +1303,7 @@ function enterApp(dev) {
   document.getElementById('user-name').textContent = USER.name;
   document.getElementById('user-role').textContent = IS_GUEST ? 'Guest' : 'Admin';
   document.getElementById('settings-email').textContent = USER.email;
-  if (!IS_GUEST) {
+  if (!IS_GUEST && USER && (USER.email === 'gauravsmokal07@gmail.com' || USER.email === 'dev@goofify.app')) {
     document.getElementById('admin-nav').style.display = 'block';
     document.getElementById('add-topic-btn').style.display = 'inline-flex';
   } else {
@@ -2376,6 +2386,12 @@ let adminUnlockTime = 0;
 const ADMIN_SESSION_MINS = 10;
 
 async function check2FABeforeAdmin() {
+  // Only admin email can access admin panel
+  const adminEmail = 'gauravsmokal07@gmail.com';
+  if (USER && USER.email !== adminEmail && USER.email !== 'dev@goofify.app') {
+    toast('Admin access restricted to admin only', 'err');
+    return false;
+  }
   // Check if already unlocked in last 10 mins
   if (adminUnlocked && Date.now() - adminUnlockTime < ADMIN_SESSION_MINS * 60 * 1000) {
     return true;
@@ -2384,12 +2400,12 @@ async function check2FABeforeAdmin() {
   try {
     const status = await api('getTOTPStatus');
     if (!status.isSetup) {
-      // Not set up yet — allow access but prompt to set up
-      toast('Set up 2FA in Admin panel for security', 'info');
+      // 2FA not set up yet — allow access but show setup prompt
+      toast('⚠️ Set up 2FA now to secure Admin panel', 'info');
       return true;
     }
   } catch(e) { return true; }
-  // Show verify modal
+  // 2FA is set up — require code
   document.getElementById('totp-input').value = '';
   document.getElementById('totp-error').textContent = '';
   openModal('verify2fa');
