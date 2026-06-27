@@ -2731,7 +2731,7 @@ window.addEventListener('load',()=>{
   const t=localStorage.getItem('goofify_theme')||'dark';
   document.documentElement.setAttribute('data-theme',t);
   document.getElementById('theme-icon').textContent=t==='dark'?'☀️':'🌙';
-  API=localStorage.getItem(API_KEY)||'';
+  API=localStorage.getItem(API_KEY)||'https://script.google.com/macros/s/AKfycbwC42gyUhKM6l3KimNWifmzuqLpRTBjOxZSBaL39XV7M18QZGCwTOrgyCLbTrLPxQJJqQ/exec';
   // Check for guest token in URL
   const p=new URLSearchParams(window.location.search);
   const gt=p.get('guest');
