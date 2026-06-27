@@ -440,7 +440,7 @@ select option{background:#1a1a2e;color:#fff;}
       <!-- TOPICS -->
       <div class="view" id="view-topics">
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-          <select id="f-ct" onchange="loadTopics()" style="width:auto;"><option value="">All types</option><option value="Leader Video">Leader video</option><option value="AI VO Video">AI VO video</option></select>
+          <select id="f-ct" onchange="loadTopics()" style="width:auto;"><option value="">All types</option></select>
           <select id="f-seo" onchange="loadTopics()" style="width:auto;"><option value="">All SEO owners</option></select>
           <select id="f-priority" onchange="loadTopics()" style="width:auto;"><option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select>
           <select id="f-stage" onchange="loadTopics()" style="width:auto;"><option value="">All stages</option></select>
@@ -482,10 +482,7 @@ select option{background:#1a1a2e;color:#fff;}
           <div class="form-row" style="margin-bottom:10px;">
             <div class="form-group" style="margin:0;">
               <div class="form-label">Content type</div>
-              <select id="ul-ct" onchange="toggleLeaderField();populateUlTopics()">
-                <option value="Leader Video">Leader video</option>
-                <option value="AI VO Video">AI VO video</option>
-              </select>
+              <select id="ul-ct" onchange="toggleLeaderField();populateUlTopics()"></select>
             </div>
             <div class="form-group" style="margin:0;" id="ul-leader-group">
               <div class="form-label">Leader</div>
@@ -634,6 +631,13 @@ select option{background:#1a1a2e;color:#fff;}
           </div>
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div class="sec-head" style="margin:0;">Content types</div>
+              <button class="btn btn-sm btn-primary" onclick="openModal('addContentType')">+ Add</button>
+            </div>
+            <div id="content-types-list"></div>
+          </div>
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
               <div class="sec-head" style="margin:0;">SEO team</div>
               <button class="btn btn-sm btn-primary" onclick="openModal('addSeo')">+ Add</button>
             </div>
@@ -696,6 +700,28 @@ select option{background:#1a1a2e;color:#fff;}
 
 <!-- ============================================================ MODALS ============================================================ -->
 
+<!-- Add Content Type -->
+<div class="overlay" id="modal-addContentType">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Add content type</div><button class="modal-close" onclick="closeModal('addContentType')">✕</button></div>
+    <div class="form-group"><div class="form-label">Name</div><input id="ctype-name" placeholder="e.g. Animation, Screen Recording"></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Icon (emoji)</div><input id="ctype-icon" placeholder="🎬"></div>
+      <div class="form-group"><div class="form-label">Color</div><input type="color" id="ctype-color" value="#6366f1" style="height:40px;padding:4px;"></div>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
+        <input type="checkbox" id="ctype-leader" checked> Requires a leader (needs shoot scheduling)
+      </label>
+      <div style="font-size:11px;color:var(--t3);margin-top:4px;">Uncheck for voiceover, animation, or any content that doesn't need a shoot</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addContentType')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitContentType()">Add content type</button>
+    </div>
+  </div>
+</div>
+
 <!-- Add Topic -->
 <div class="overlay" id="modal-addTopic">
   <div class="modal">
@@ -703,10 +729,7 @@ select option{background:#1a1a2e;color:#fff;}
     <div class="form-group"><div class="form-label">Topic title</div><input id="t-title" placeholder="e.g. AI in Ophthalmology"></div>
     <div class="form-row">
       <div class="form-group"><div class="form-label">Content type</div>
-        <select id="t-ct" onchange="toggleTopicLeaderField()">
-          <option value="Leader Video">🎬 Leader video</option>
-          <option value="AI VO Video">🎙️ AI VO video</option>
-        </select>
+        <select id="t-ct" onchange="toggleTopicLeaderField()"></select>
       </div>
       <div class="form-group"><div class="form-label">Platform</div>
         <select id="t-platform"><option>YouTube</option><option>LinkedIn</option><option>Both</option></select>
@@ -743,7 +766,7 @@ select option{background:#1a1a2e;color:#fff;}
     </div>
     <div class="form-row">
       <div class="form-group"><div class="form-label">Platform</div><select id="edit-platform"><option>YouTube</option><option>LinkedIn</option><option>Both</option></select></div>
-      <div class="form-group"><div class="form-label">Content type</div><select id="edit-ct"><option value="Leader Video">Leader video</option><option value="AI VO Video">AI VO video</option></select></div>
+      <div class="form-group"><div class="form-label">Content type</div><select id="edit-ct"></select></div>
     </div>
     <div class="div"></div>
     <div class="sec-head">Publish status</div>
@@ -927,7 +950,7 @@ let API = localStorage.getItem(API_KEY) || '';
 let USER = null, IS_GUEST = false, GUEST_TOKEN = null, GUEST_SECTIONS = [];
 let CURRENT_VIEW = 'dashboard';
 let ANALYTICS_PLATFORM = 'YouTube';
-let cache = { topics:[], scripts:[], leaders:[], seoTeam:[], shoots:[], rework:[], analytics:[], clusters:[], stages:[], guests:[], activity:[] };
+let cache = { topics:[], scripts:[], leaders:[], seoTeam:[], shoots:[], rework:[], analytics:[], clusters:[], stages:[], guests:[], activity:[], contentTypes:[] };
 let selectedFile = null, lastReport = null;
 let searchTimer = null, searchResultIndex = -1, searchResultsData = [];
 
@@ -1162,14 +1185,26 @@ function loadView(n) {
 // ============================================================
 async function loadAll() {
   try {
-    const [clusters, stages, seo, leaders] = await Promise.all([api('getClusters'), api('getStages'), api('getSeoTeam'), api('getLeaders')]);
+    const [clusters, stages, seo, leaders, contentTypes] = await Promise.all([
+      api('getClusters'), api('getStages'), api('getSeoTeam'), api('getLeaders'), api('getContentTypes')
+    ]);
     cache.clusters=clusters; cache.stages=stages.sort((a,b)=>Number(a.order)-Number(b.order));
-    cache.seoTeam=seo; cache.leaders=leaders;
+    cache.seoTeam=seo; cache.leaders=leaders; cache.contentTypes=contentTypes;
     populateDropdowns();
   } catch(e) {}
 }
 
 function populateDropdowns() {
+  // Content types
+  const ctOpts = cache.contentTypes.map(c=>`<option value="${c.name}">${c.icon||''} ${c.name}</option>`).join('');
+  const ctOptsFilter = '<option value="">All types</option>' + ctOpts;
+  ['t-ct','ul-ct','edit-ct'].forEach(id => {
+    const el=document.getElementById(id); if(!el) return;
+    const was=el.value; el.innerHTML=ctOpts; if(was) el.value=was;
+  });
+  const fctel=document.getElementById('f-ct');
+  if(fctel){const was=fctel.value; fctel.innerHTML=ctOptsFilter; if(was) fctel.value=was;}
+
   const cOpts = cache.clusters.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
   ['t-cluster','ul-cluster','f-cluster','seo-cluster'].forEach(id => {
     const el = document.getElementById(id); if (!el) return;
@@ -1198,7 +1233,13 @@ function stageBadge(stage) {
   const s = cache.stages.find(x=>x.name===stage)||{};
   return `<span class="badge" style="background:${s.color||'#555'}22;color:${s.color||'#aaa'};">${s.icon||''} ${stage||'—'}</span>`;
 }
-function ctBadge(ct) { return ct==='AI VO Video' ? '<span class="ct-vo">🎙️ AI VO</span>' : '<span class="ct-leader">🎬 Leader</span>'; }
+function ctBadge(ct) {
+  const found = cache.contentTypes.find(x => x.name === ct);
+  const color = found ? found.color : (ct==='AI VO Video' ? 'var(--cyan)' : 'var(--acc-l)');
+  const bg = found ? found.color+'22' : (ct==='AI VO Video' ? 'var(--cyan-g)' : 'var(--acc-gl)');
+  const icon = found ? (found.icon||'') : (ct==='AI VO Video' ? '🎙️' : '🎬');
+  return `<span style="background:${bg};color:${color};font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;">${icon} ${ct||'—'}</span>`;
+}
 function pfBadge(pf) { return pf==='Both'?'<span class="pf-both">YT+LI</span>':pf==='LinkedIn'?'<span class="pf-li">in LI</span>':'<span class="pf-yt">▶ YT</span>'; }
 function priorityDot(p) { const c=p==='High'?'p-high':p==='Medium'?'p-med':'p-low'; return `<span class="p-dot ${c}"></span>`; }
 function availBadge(a) { const m={Available:'badge-green',Limited:'badge-amber',Flexible:'badge-blue',Unavailable:'badge-gray'}; return `<span class="badge ${m[a]||'badge-gray'}">${a||'—'}</span>`; }
@@ -1221,13 +1262,17 @@ function pubStatus(ytPub, liPub, platform) {
 // ============================================================
 //  DYNAMIC FORM TOGGLES
 // ============================================================
+function needsLeader(ct) {
+  const found = cache.contentTypes.find(x => x.name === ct);
+  return found ? (found.requiresLeader === true || found.requiresLeader === 'true' || found.requiresLeader === 'TRUE') : ct !== 'AI VO Video';
+}
 function toggleTopicLeaderField() {
   const ct = document.getElementById('t-ct').value;
-  document.getElementById('t-leader-group').style.display = ct==='AI VO Video' ? 'none' : 'block';
+  document.getElementById('t-leader-group').style.display = needsLeader(ct) ? 'block' : 'none';
 }
 function toggleLeaderField() {
   const ct = document.getElementById('ul-ct').value;
-  document.getElementById('ul-leader-group').style.display = ct==='AI VO Video' ? 'none' : 'block';
+  document.getElementById('ul-leader-group').style.display = needsLeader(ct) ? 'block' : 'none';
   populateUlTopics();
 }
 
@@ -1311,7 +1356,7 @@ async function loadPipeline() {
       return `<div class="k-col">
         <div class="k-col-head"><span>${stage.icon||''} ${stage.name}</span><span class="nav-badge">${cards.length}</span></div>
         ${cards.map(t=>`
-          <div class="k-card ${t.contentType==='AI VO Video'?'k-vo':'k-leader'}" onclick="${IS_GUEST?'':'quickEdit(\''+t.id+'\',\''+t.title+'\',\''+t.pipelineStage+'\',\''+t.priority+'\',\''+t.contentType+'\',\''+t.platform+'\')'}">
+          <div class="k-card ${needsLeader(t.contentType)?'k-leader':'k-vo'}" onclick="${IS_GUEST?'':'quickEdit(\''+t.id+'\',\''+t.title+'\',\''+t.pipelineStage+'\',\''+t.priority+'\',\''+t.contentType+'\',\''+t.platform+'\')'}">
             <div class="k-card-title">${t.title}</div>
             <div class="k-meta">
               <span class="p-dot ${t.priority==='High'?'p-high':t.priority==='Medium'?'p-med':'p-low'}"></span>
@@ -1449,7 +1494,7 @@ function populateUlTopics() {
   if (!sel) return;
   let filtered = cache.topics.filter(t => t.pipelineStage !== 'Published');
   if (ct) filtered = filtered.filter(t => (t.contentType||'Leader Video') === ct);
-  if (ct !== 'AI VO Video' && leader) filtered = filtered.filter(t => t.leader === leader);
+  if (needsLeader(ct) && leader) filtered = filtered.filter(t => t.leader === leader);
   if (cluster) filtered = filtered.filter(t => t.cluster === cluster);
   sel.innerHTML = '<option value="">— select topic —</option>' + filtered.map(t=>`<option value="${t.id}" data-title="${t.title}">${t.title}</option>`).join('');
 }
@@ -1471,7 +1516,7 @@ async function uploadScript() {
   const topicId=topicSel.value;
   const topicTitle=topicSel.options[topicSel.selectedIndex]?.dataset.title||'';
   const ct=document.getElementById('ul-ct').value;
-  const leader=ct==='AI VO Video'?'':document.getElementById('ul-leader').value;
+  const leader=needsLeader(ct)?document.getElementById('ul-leader').value:'';
   const cluster=document.getElementById('ul-cluster').value;
   if(!topicId){toast('Select a topic','err');return;}
   if(!selectedFile){toast('Select a file','err');return;}
@@ -1728,6 +1773,20 @@ async function loadAdmin() {
         <button class="btn btn-sm btn-danger" onclick="deleteCluster('${c.id}')">Delete</button>
       </div>`).join('')||'<div style="color:var(--t3);font-size:12px;">No clusters</div>';
 
+    // Content types
+    const ctypes = cache.contentTypes;
+    document.getElementById('content-types-list').innerHTML = ctypes.length
+      ? ctypes.map(c=>`
+        <div class="settings-item">
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span style="width:10px;height:10px;border-radius:50%;background:${c.color};display:inline-block;"></span>
+            ${c.icon||''} ${c.name}
+            <span style="font-size:11px;color:var(--t3);">${c.requiresLeader==='true'||c.requiresLeader===true?'needs leader':'no leader'}</span>
+          </span>
+          <button class="btn btn-sm btn-danger" onclick="deleteContentType('${c.id}')">Delete</button>
+        </div>`).join('')
+      : '<div style="color:var(--t3);font-size:12px;">No content types — add one above</div>';
+
     document.getElementById('stages-list').innerHTML=[...stages].sort((a,b)=>Number(a.order)-Number(b.order)).map(s=>`
       <div class="settings-item">
         <span>${s.icon||''} ${s.name} <span style="font-size:10px;color:var(--t3);">order:${s.order}</span></span>
@@ -1810,7 +1869,7 @@ async function submitTopic(){
     await apiPost('addTopic',{
       title,cluster:document.getElementById('t-cluster').value,
       seoOwner:document.getElementById('t-seo').value,
-      leader:ct==='AI VO Video'?'':document.getElementById('t-leader').value,
+      leader:needsLeader(ct)?document.getElementById('t-leader').value:'',
       priority:document.getElementById('t-priority').value,
       targetDuration:document.getElementById('t-dur').value,
       researchSource:document.getElementById('t-src').value,
@@ -1872,6 +1931,31 @@ async function submitGuest(){
 function copyGuestLink(){navigator.clipboard.writeText(document.getElementById('guest-link-display').value).then(()=>toast('Copied ✓','ok'));}
 function copyGuestLinkById(token){const link=`${window.location.origin}${window.location.pathname}?guest=${token}`;navigator.clipboard.writeText(link).then(()=>toast('Link copied ✓','ok'));}
 async function revokeGuest(id){if(!confirm('Revoke this token?'))return;try{await apiPost('revokeGuestToken',{id});toast('Revoked','ok');loadAdmin();}catch(e){toast(e.message,'err');}}
+
+// ============================================================
+//  CONTENT TYPES
+// ============================================================
+async function submitContentType() {
+  const name = document.getElementById('ctype-name').value.trim();
+  if (!name) { toast('Enter a name', 'err'); return; }
+  try {
+    await apiPost('addContentType', {
+      name,
+      icon: document.getElementById('ctype-icon').value,
+      color: document.getElementById('ctype-color').value,
+      requiresLeader: document.getElementById('ctype-leader').checked,
+    });
+    closeModal('addContentType');
+    toast('Content type added ✓', 'ok');
+    loadAll(); loadAdmin();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function deleteContentType(id) {
+  if (!confirm('Delete this content type?')) return;
+  try { await apiPost('deleteContentType', { id }); toast('Deleted', 'ok'); loadAll(); loadAdmin(); }
+  catch(e) { toast(e.message, 'err'); }
+}
 
 // ============================================================
 //  CHECKLIST
