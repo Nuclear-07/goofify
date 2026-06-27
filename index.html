@@ -922,6 +922,7 @@ select option{background:#1a1a2e;color:#fff;}
 // ============================================================
 const API_KEY = 'goofify_api_url';
 const CLIENT_KEY = 'goofify_client_id';
+const HARDCODED_CLIENT_ID = '370256532985-3k70295ov77f3n732li1t1fgmhk9bsbv.apps.googleusercontent.com';
 let API = localStorage.getItem(API_KEY) || '';
 let USER = null, IS_GUEST = false, GUEST_TOKEN = null, GUEST_SECTIONS = [];
 let CURRENT_VIEW = 'dashboard';
@@ -934,13 +935,13 @@ let searchTimer = null, searchResultIndex = -1, searchResultsData = [];
 //  GOOGLE AUTH
 // ============================================================
 function initGoogleAuth() {
-  const cid = localStorage.getItem(CLIENT_KEY);
+  const cid = localStorage.getItem(CLIENT_KEY) || HARDCODED_CLIENT_ID;
   if (!cid || cid.includes('YOUR_CLIENT_ID')) return;
   if (typeof google === 'undefined') return;
   google.accounts.id.initialize({ client_id: cid, callback: onGoogleSignIn, auto_select: true });
 }
 function signInGoogle() {
-  const cid = localStorage.getItem(CLIENT_KEY);
+  const cid = localStorage.getItem(CLIENT_KEY) || HARDCODED_CLIENT_ID;
   if (!cid || cid.includes('YOUR_CLIENT_ID')) { enterApp(true); return; }
   google.accounts.id.prompt();
 }
