@@ -345,6 +345,10 @@ select option{background:#1a1a2e;color:#fff;}
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
       YT / LinkedIn
     </div>
+    <div class="nav-item" id="nav-ytchannels" onclick="nav('ytchannels')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-width="1.5" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      YT Channels
+    </div>
     <div class="nav-item" id="nav-reports" onclick="nav('reports')">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
       Reports
@@ -590,6 +594,22 @@ select option{background:#1a1a2e;color:#fff;}
         </div>
       </div>
 
+
+      <!-- YT CHANNELS -->
+      <div class="view" id="view-ytchannels">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="font-size:13px;color:var(--t2);">Manage all YouTube channels — yours and clients. Switch between Auto (API) and Manual mode per channel.</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addYTChannel')">+ Add channel</button>
+        </div>
+        <div id="yt-channels-grid" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+        <!-- Before/After comparison section -->
+        <div class="div" style="margin:20px 0;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div class="sec-head" style="margin:0;">📊 Before / After comparisons</div>
+        </div>
+        <div id="snapshots-list"></div>
+      </div>
       <!-- REPORTS -->
       <div class="view" id="view-reports">
         <div class="card" style="margin-bottom:14px;">
@@ -698,6 +718,159 @@ select option{background:#1a1a2e;color:#fff;}
   </div>
 </div>
 
+
+<!-- 2FA Verify Modal -->
+<div class="overlay" id="modal-verify2fa">
+  <div class="modal" style="max-width:380px;text-align:center;">
+    <div class="modal-head" style="justify-content:center;flex-direction:column;gap:6px;">
+      <div style="font-size:32px;">🔐</div>
+      <div class="modal-title">Admin verification</div>
+    </div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:20px;">Enter the 6-digit code from your<br><strong>Google Authenticator</strong> app</p>
+    <input id="totp-input" type="text" inputmode="numeric" maxlength="6"
+      placeholder="000000"
+      style="text-align:center;font-size:28px;letter-spacing:8px;font-weight:700;padding:14px;"
+      oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length===6)submitTOTP()">
+    <div id="totp-error" style="color:var(--red);font-size:12px;margin-top:8px;min-height:16px;"></div>
+    <div class="modal-foot" style="justify-content:center;margin-top:14px;">
+      <button class="btn" onclick="closeModal('verify2fa')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitTOTP()">Verify</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2FA Setup Modal -->
+<div class="overlay" id="modal-setup2fa">
+  <div class="modal" style="max-width:420px;text-align:center;">
+    <div class="modal-head" style="justify-content:center;flex-direction:column;gap:6px;">
+      <div style="font-size:32px;">🔐</div>
+      <div class="modal-title">Set up Admin 2FA</div>
+    </div>
+    <p style="font-size:13px;color:var(--t2);margin-bottom:16px;">Scan this QR code with <strong>Google Authenticator</strong></p>
+    <div id="totp-qr" style="margin:0 auto 16px;width:200px;height:200px;background:var(--gs);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+      <div class="spin"></div>
+    </div>
+    <div style="background:var(--gs);border-radius:var(--radius-sm);padding:10px;margin-bottom:14px;">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:4px;">Manual entry key</div>
+      <div id="totp-secret" style="font-size:13px;font-family:monospace;color:var(--acc-l);letter-spacing:2px;word-break:break-all;"></div>
+    </div>
+    <div style="background:var(--amber-g);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:10px;font-size:12px;color:var(--amber);margin-bottom:14px;text-align:left;">
+      <strong>Steps:</strong><br>
+      1. Open Google Authenticator app<br>
+      2. Tap + → Scan QR code<br>
+      3. Scan the code above<br>
+      4. Enter the 6-digit code below to confirm
+    </div>
+    <input id="totp-confirm-input" type="text" inputmode="numeric" maxlength="6"
+      placeholder="Enter code to confirm setup"
+      style="text-align:center;font-size:20px;letter-spacing:6px;font-weight:700;padding:12px;">
+    <div id="totp-setup-error" style="color:var(--red);font-size:12px;margin-top:6px;min-height:16px;"></div>
+    <div class="modal-foot" style="justify-content:center;">
+      <button class="btn" onclick="closeModal('setup2fa')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmSetup2FA()">Confirm & activate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add YT Channel Modal -->
+<div class="overlay" id="modal-addYTChannel">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Add YouTube channel</div>
+      <button class="modal-close" onclick="closeModal('addYTChannel')">✕</button>
+    </div>
+    <div class="form-group"><div class="form-label">Channel name</div><input id="ytc-name" placeholder="e.g. Mindbowser, Client XYZ"></div>
+    <div class="form-group"><div class="form-label">Channel ID</div><input id="ytc-id" placeholder="UCxxxxxxxx (from YouTube Studio → Settings → Channel)"></div>
+    <div class="form-group"><div class="form-label">Owner / Client name</div><input id="ytc-client" placeholder="e.g. Mindbowser internal, Client ABC"></div>
+    <div class="form-group"><div class="form-label">Owner email (for API access)</div><input id="ytc-email" type="email" placeholder="channel owner's Gmail"></div>
+    <div class="form-group">
+      <div class="form-label">Stats mode</div>
+      <select id="ytc-mode" onchange="toggleYTModeInfo(this.value)">
+        <option value="manual">📝 Manual — I enter stats myself</option>
+        <option value="auto">⚡ Auto — pull from YouTube API</option>
+      </select>
+      <div id="ytc-mode-info-manual" style="margin-top:8px;background:var(--blue-g);border:1px solid var(--blue);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;color:var(--blue);">
+        📝 You manually enter before/after stats. Works for any client — no access needed.
+      </div>
+      <div id="ytc-mode-info-auto" style="display:none;margin-top:8px;background:var(--green-g);border:1px solid var(--green);border-radius:var(--radius-sm);padding:8px 10px;font-size:12px;color:var(--green);">
+        ⚡ Goofify pulls stats automatically. Client needs to add gauravsmokal07@gmail.com as Viewer in their YouTube Studio → Settings → Permissions.
+      </div>
+    </div>
+    <div class="form-group"><div class="form-label">Notes</div><textarea id="ytc-notes" rows="2" placeholder="Any notes about this channel"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addYTChannel')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitYTChannel()">Add channel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Before Snapshot Modal -->
+<div class="overlay" id="modal-beforeSnapshot">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">📸 Save "Before" stats</div>
+      <button class="modal-close" onclick="closeModal('beforeSnapshot')">✕</button>
+    </div>
+    <input type="hidden" id="snap-rework-id">
+    <input type="hidden" id="snap-mode">
+    <div style="background:var(--blue-g);border:1px solid var(--blue);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--blue);margin-bottom:14px;">
+      📌 Save these stats <strong>before</strong> you make any changes to the video. You'll log "After" stats 30 days later.
+    </div>
+    <div id="snap-video-title" style="font-weight:600;font-size:14px;margin-bottom:14px;"></div>
+    <div class="form-group">
+      <div class="form-label">Channel</div>
+      <select id="snap-channel"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Views</div><input type="number" id="snap-views-b" placeholder="e.g. 4280"></div>
+      <div class="form-group"><div class="form-label">Impressions</div><input type="number" id="snap-imp-b" placeholder="e.g. 23800"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">CTR %</div><input type="number" step="0.1" id="snap-ctr-b" placeholder="e.g. 1.8"></div>
+      <div class="form-group"><div class="form-label">Watch time (hrs)</div><input type="number" id="snap-wt-b" placeholder="e.g. 142"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Avg view duration</div><input id="snap-dur-b" placeholder="e.g. 6:32"></div>
+      <div class="form-group"><div class="form-label">Subscribers at this point</div><input type="number" id="snap-subs-b" placeholder="e.g. 12400"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('beforeSnapshot')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitBeforeSnapshot()">Save before stats</button>
+    </div>
+  </div>
+</div>
+
+<!-- After Snapshot Modal -->
+<div class="overlay" id="modal-afterSnapshot">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">📊 Save "After" stats</div>
+      <button class="modal-close" onclick="closeModal('afterSnapshot')">✕</button>
+    </div>
+    <input type="hidden" id="snap-after-id">
+    <div style="background:var(--green-g);border:1px solid var(--green);border-radius:var(--radius-sm);padding:8px 12px;font-size:12px;color:var(--green);margin-bottom:14px;">
+      ✅ Enter the stats <strong>30 days after</strong> the rework. Goofify will calculate the exact delta automatically.
+    </div>
+    <div id="snap-after-video-title" style="font-weight:600;font-size:14px;margin-bottom:4px;"></div>
+    <div id="snap-before-summary" style="font-size:12px;color:var(--t3);margin-bottom:14px;"></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Views (after)</div><input type="number" id="snap-views-a" placeholder="e.g. 6940"></div>
+      <div class="form-group"><div class="form-label">Impressions (after)</div><input type="number" id="snap-imp-a" placeholder="e.g. 31200"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">CTR % (after)</div><input type="number" step="0.1" id="snap-ctr-a" placeholder="e.g. 3.1"></div>
+      <div class="form-group"><div class="form-label">Watch time hrs (after)</div><input type="number" id="snap-wt-a" placeholder="e.g. 230"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Avg duration (after)</div><input id="snap-dur-a" placeholder="e.g. 7:14"></div>
+      <div class="form-group"><div class="form-label">Subscribers (after)</div><input type="number" id="snap-subs-a" placeholder="e.g. 13800"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('afterSnapshot')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAfterSnapshot()">Save & calculate delta</button>
+    </div>
+  </div>
+</div>
 <!-- ============================================================ MODALS ============================================================ -->
 <!-- Share Script Modal -->
 <div class="overlay" id="modal-shareScript">
@@ -1044,7 +1217,7 @@ let API = localStorage.getItem(API_KEY) || '';
 let USER = null, IS_GUEST = false, GUEST_TOKEN = null, GUEST_SECTIONS = [];
 let CURRENT_VIEW = 'dashboard';
 let ANALYTICS_PLATFORM = 'YouTube';
-let cache = { topics:[], scripts:[], leaders:[], seoTeam:[], shoots:[], rework:[], analytics:[], clusters:[], stages:[], guests:[], activity:[], contentTypes:[] };
+let cache = { topics:[], scripts:[], leaders:[], seoTeam:[], shoots:[], rework:[], analytics:[], clusters:[], stages:[], guests:[], activity:[], contentTypes:[], ytChannels:[], snapshots:[] };
 let selectedFile = null, lastReport = null;
 let searchTimer = null, searchResultIndex = -1, searchResultsData = [];
 
@@ -1247,7 +1420,8 @@ document.addEventListener('keydown', e => {
 const VIEW_TITLES = {
   dashboard:'Dashboard', pipeline:'Content pipeline', topics:'Topic inbox',
   shoots:'Shoot planner', scripts:'Scripts & uploads', drive:'Drive tree',
-  rework:'Rework tracker', analytics:'Analytics — YT & LinkedIn', reports:'Reports',
+  rework:'Rework tracker', analytics:'Analytics — YT & LinkedIn',
+  ytchannels:'YouTube Channels & Before/After', reports:'Reports',
   admin:'Admin panel', settings:'Settings'
 };
 function nav(name) {
@@ -1270,8 +1444,14 @@ function loadView(n) {
   else if(n==='drive') loadDrive();
   else if(n==='rework') loadRework();
   else if(n==='analytics') loadAnalytics();
-  else if(n==='admin') loadAdmin();
+  else if(n==='ytchannels') loadYTChannels();
+  else if(n==='admin') loadAdminWithAuth();
   else if(n==='settings') loadSettings();
+}
+
+async function loadAdminWithAuth() {
+  const ok = await check2FABeforeAdmin();
+  if (ok) { loadAdmin(); load2FAStatus(); }
 }
 
 // ============================================================
@@ -1709,6 +1889,7 @@ async function loadRework() {
             <option ${r.status==='Done'?'selected':''}>Done</option>
           </select>`}
           ${r.ytLink?`<a href="${r.ytLink}" target="_blank" class="btn btn-sm btn-icon">↗</a>`:''}
+          ${IS_GUEST?'':`<button class="btn btn-sm" style="color:var(--blue);border-color:var(--blue);font-size:10px;" onclick="openBeforeSnapshot('${r.id}','${r.videoTitle.replace(/'/g,'&apos;')}')">📸 Before</button>`}
           ${IS_GUEST?'':`<button class="btn btn-sm btn-danger btn-icon" onclick="deleteRework('${r.id}')">✕</button>`}
         </div>`).join('')
       : '<div class="empty"><p>No rework videos in queue</p></div>';
@@ -2168,6 +2349,332 @@ async function confirmDeleteScript() {
     toast('Script permanently deleted from Drive ✓', 'ok');
     loadScripts();
   } catch(e) { toast('Delete failed: ' + e.message, 'err'); }
+}
+
+
+// ============================================================
+//  PHASE 2 — 2FA ADMIN PROTECTION
+// ============================================================
+let adminUnlocked = false;
+let adminUnlockTime = 0;
+const ADMIN_SESSION_MINS = 10;
+
+async function check2FABeforeAdmin() {
+  // Check if already unlocked in last 10 mins
+  if (adminUnlocked && Date.now() - adminUnlockTime < ADMIN_SESSION_MINS * 60 * 1000) {
+    return true;
+  }
+  // Check if 2FA is set up
+  try {
+    const status = await api('getTOTPStatus');
+    if (!status.isSetup) {
+      // Not set up yet — allow access but prompt to set up
+      toast('Set up 2FA in Admin panel for security', 'info');
+      return true;
+    }
+  } catch(e) { return true; }
+  // Show verify modal
+  document.getElementById('totp-input').value = '';
+  document.getElementById('totp-error').textContent = '';
+  openModal('verify2fa');
+  return false;
+}
+
+async function submitTOTP() {
+  const token = document.getElementById('totp-input').value.trim();
+  if (token.length !== 6) {
+    document.getElementById('totp-error').textContent = 'Enter all 6 digits';
+    return;
+  }
+  try {
+    const result = await api('verifyTOTP', { token, email: USER?.email || '' });
+    if (result.valid) {
+      adminUnlocked = true;
+      adminUnlockTime = Date.now();
+      closeModal('verify2fa');
+      toast('Admin access granted ✓', 'ok');
+      nav('admin');
+    } else {
+      document.getElementById('totp-error').textContent = result.error || 'Invalid code';
+      document.getElementById('totp-input').value = '';
+      document.getElementById('totp-input').focus();
+    }
+  } catch(e) {
+    document.getElementById('totp-error').textContent = 'Verification error: ' + e.message;
+  }
+}
+
+async function initSetup2FA() {
+  openModal('setup2fa');
+  document.getElementById('totp-qr').innerHTML = '<div class="spin"></div>';
+  document.getElementById('totp-secret').textContent = '';
+  try {
+    const result = await apiPost('setupTOTP', { email: USER?.email || CONFIG.ADMIN_EMAIL });
+    document.getElementById('totp-qr').innerHTML = `<img src="${result.qrUrl}" style="width:200px;height:200px;border-radius:8px;">`;
+    document.getElementById('totp-secret').textContent = result.secret;
+    localStorage.setItem('goofify_totp_setup', 'pending');
+  } catch(e) {
+    toast('Setup error: ' + e.message, 'err');
+    closeModal('setup2fa');
+  }
+}
+
+async function confirmSetup2FA() {
+  const token = document.getElementById('totp-confirm-input').value.trim();
+  if (token.length !== 6) {
+    document.getElementById('totp-setup-error').textContent = 'Enter the 6-digit code from the app';
+    return;
+  }
+  try {
+    const result = await api('verifyTOTP', { token });
+    if (result.valid) {
+      localStorage.setItem('goofify_totp_setup', 'done');
+      closeModal('setup2fa');
+      toast('2FA activated! Admin panel is now protected ✓', 'ok');
+      adminUnlocked = true;
+      adminUnlockTime = Date.now();
+      load2FAStatus();
+    } else {
+      document.getElementById('totp-setup-error').textContent = 'Code incorrect — make sure you scanned the QR code first';
+    }
+  } catch(e) {
+    document.getElementById('totp-setup-error').textContent = e.message;
+  }
+}
+
+function test2FA() {
+  adminUnlocked = false;
+  document.getElementById('totp-input').value = '';
+  document.getElementById('totp-error').textContent = '';
+  openModal('verify2fa');
+}
+
+async function load2FAStatus() {
+  try {
+    const status = await api('getTOTPStatus');
+    const badge = document.getElementById('twofa-status-badge');
+    const desc = document.getElementById('twofa-status-desc');
+    const setupBtn = document.getElementById('setup-2fa-btn');
+    const testBtn = document.getElementById('test-2fa-btn');
+    if (status.isSetup) {
+      badge.innerHTML = '<span class="badge badge-green">✓ Active</span>';
+      desc.textContent = 'Admin panel is protected. A 6-digit code is required every ' + ADMIN_SESSION_MINS + ' minutes.';
+      setupBtn.textContent = 'Regenerate QR code';
+      testBtn.style.display = 'inline-flex';
+    } else {
+      badge.innerHTML = '<span class="badge badge-red">Not set up</span>';
+      desc.textContent = 'Admin panel has no protection. Click Setup 2FA to secure it with Google Authenticator.';
+      setupBtn.textContent = 'Setup 2FA';
+      testBtn.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+// ============================================================
+//  PHASE 2 — YT CHANNELS
+// ============================================================
+function toggleYTModeInfo(val) {
+  document.getElementById('ytc-mode-info-manual').style.display = val === 'manual' ? 'block' : 'none';
+  document.getElementById('ytc-mode-info-auto').style.display = val === 'auto' ? 'block' : 'none';
+}
+
+async function loadYTChannels() {
+  try {
+    const [channels, snapshots] = await Promise.all([api('getYTChannels'), api('getReworkSnapshots')]);
+    cache.ytChannels = channels;
+    cache.snapshots = snapshots;
+
+    const grid = document.getElementById('yt-channels-grid');
+    grid.innerHTML = channels.length ? channels.map(c => `
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div style="width:42px;height:42px;background:var(--red-g);border:1px solid var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">▶</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:14px;">${c.channelName}</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px;">${c.clientName||''} ${c.ownerEmail?'· '+c.ownerEmail:''}</div>
+            ${c.channelId?`<div style="font-size:10px;color:var(--t3);font-family:monospace;">${c.channelId}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <span class="badge ${c.mode==='auto'?'badge-green':'badge-blue'}">${c.mode==='auto'?'⚡ Auto':'📝 Manual'}</span>
+            <div style="display:flex;gap:5px;">
+              <button class="btn btn-sm" onclick="switchChannelMode('${c.id}','${c.mode==='auto'?'manual':'auto'}','${c.channelName}')">
+                Switch to ${c.mode==='auto'?'manual':'auto'}
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="deleteYTChannel('${c.id}')">Delete</button>
+            </div>
+          </div>
+        </div>
+        ${c.mode==='auto'?`
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--gb);font-size:12px;color:var(--t2);">
+          <strong>How to give access:</strong> Ask ${c.clientName||'client'} to go to YouTube Studio → Settings → Permissions → Add <span style="color:var(--acc-l);">gauravsmokal07@gmail.com</span> as Viewer
+        </div>`:`
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--gb);font-size:12px;color:var(--t2);">
+          📝 Manual mode — you enter stats yourself. <a onclick="switchChannelMode('${c.id}','auto','${c.channelName}')" style="color:var(--acc-l);cursor:pointer;">Switch to auto</a> when client grants access.
+        </div>`}
+      </div>`).join('')
+    : `<div class="empty"><p>No channels added yet</p><small>Add your YouTube channel or a client channel above</small></div>`;
+
+    // Snapshots (before/after comparisons)
+    const snapDiv = document.getElementById('snapshots-list');
+    const complete = snapshots.filter(s => s.status === 'complete');
+    const waiting  = snapshots.filter(s => s.status === 'waiting');
+
+    snapDiv.innerHTML = '';
+
+    if (waiting.length) {
+      snapDiv.innerHTML += `<div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:8px;">⏳ Waiting for after stats (${waiting.length})</div>`;
+      snapDiv.innerHTML += waiting.map(s => `
+        <div class="card-inner" style="margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+          <div style="flex:1;">
+            <div style="font-weight:500;font-size:13px;">${s.videoTitle}</div>
+            <div style="font-size:11px;color:var(--t3);">Before: ${fmt(s.viewsBefore)} views · CTR ${s.ctrBefore}% · Snapshot: ${s.snapshotDate}</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openAfterSnapshot('${s.id}','${s.videoTitle}',${s.viewsBefore},${s.ctrBefore})">Log after stats</button>
+        </div>`).join('');
+    }
+
+    if (complete.length) {
+      snapDiv.innerHTML += `<div style="font-size:12px;font-weight:600;color:var(--green);margin:14px 0 8px;">✅ Completed comparisons (${complete.length})</div>`;
+      snapDiv.innerHTML += complete.map(s => `
+        <div class="card" style="margin-bottom:10px;">
+          <div style="font-weight:600;font-size:14px;margin-bottom:12px;">${s.videoTitle}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+            <div style="text-align:center;">
+              <div style="font-size:10px;color:var(--t3);margin-bottom:6px;">VIEWS</div>
+              <div style="font-size:13px;color:var(--t2);">${fmt(s.viewsBefore)}</div>
+              <div style="font-size:18px;color:${Number(s.viewsDelta)>=0?'var(--green)':'var(--red)'};font-weight:700;">${Number(s.viewsDelta)>=0?'+':''}${s.viewsDelta}%</div>
+              <div style="font-size:13px;font-weight:600;">${fmt(s.viewsAfter)}</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:10px;color:var(--t3);margin-bottom:6px;">CTR</div>
+              <div style="font-size:13px;color:var(--t2);">${s.ctrBefore}%</div>
+              <div style="font-size:18px;color:${Number(s.ctrDelta)>=0?'var(--green)':'var(--red)'};font-weight:700;">${Number(s.ctrDelta)>=0?'+':''}${s.ctrDelta}%</div>
+              <div style="font-size:13px;font-weight:600;">${s.ctrAfter}%</div>
+            </div>
+            <div style="text-align:center;">
+              <div style="font-size:10px;color:var(--t3);margin-bottom:6px;">WATCH TIME</div>
+              <div style="font-size:13px;color:var(--t2);">${fmt(s.watchTimeBefore)}h</div>
+              <div style="font-size:18px;color:${Number(s.watchTimeDelta)>=0?'var(--green)':'var(--red)'};font-weight:700;">${Number(s.watchTimeDelta)>=0?'+':''}${s.watchTimeDelta}%</div>
+              <div style="font-size:13px;font-weight:600;">${fmt(s.watchTimeAfter)}h</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:8px;text-align:center;">${s.snapshotDate} → ${s.afterDate}</div>
+        </div>`).join('');
+    }
+
+    if (!waiting.length && !complete.length) {
+      snapDiv.innerHTML = '<div class="empty"><p>No before/after comparisons yet</p><small>Click "Log before stats" on any rework video to start tracking</small></div>';
+    }
+
+  } catch(e) { toast('YT Channels: ' + e.message, 'err'); }
+}
+
+async function submitYTChannel() {
+  const name = document.getElementById('ytc-name').value.trim();
+  if (!name) { toast('Enter channel name', 'err'); return; }
+  try {
+    await apiPost('addYTChannel', {
+      channelName: name,
+      channelId: document.getElementById('ytc-id').value.trim(),
+      clientName: document.getElementById('ytc-client').value.trim(),
+      ownerEmail: document.getElementById('ytc-email').value.trim(),
+      mode: document.getElementById('ytc-mode').value,
+      notes: document.getElementById('ytc-notes').value.trim(),
+    });
+    closeModal('addYTChannel');
+    toast('Channel added ✓', 'ok');
+    loadYTChannels();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function switchChannelMode(id, newMode, name) {
+  try {
+    await apiPost('updateYTChannel', { id, mode: newMode });
+    toast(`${name} switched to ${newMode} mode ✓`, 'ok');
+    loadYTChannels();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function deleteYTChannel(id) {
+  if (!confirm('Delete this channel?')) return;
+  try { await apiPost('deleteYTChannel', { id }); toast('Deleted', 'ok'); loadYTChannels(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+// ============================================================
+//  PHASE 2 — BEFORE / AFTER SNAPSHOTS
+// ============================================================
+function openBeforeSnapshot(reworkId, videoTitle) {
+  document.getElementById('snap-rework-id').value = reworkId;
+  document.getElementById('snap-video-title').textContent = videoTitle;
+  // Populate channel dropdown
+  const channels = cache.ytChannels || [];
+  document.getElementById('snap-channel').innerHTML = channels.length
+    ? channels.map(c => `<option value="${c.id}" data-name="${c.channelName}">${c.channelName} (${c.mode})</option>`).join('')
+    : '<option value="">No channels — add one in YT Channels tab</option>';
+  // Clear inputs
+  ['snap-views-b','snap-imp-b','snap-ctr-b','snap-wt-b','snap-dur-b','snap-subs-b'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  openModal('beforeSnapshot');
+}
+
+async function submitBeforeSnapshot() {
+  const reworkId = document.getElementById('snap-rework-id').value;
+  const chanSel = document.getElementById('snap-channel');
+  const channelName = chanSel.options[chanSel.selectedIndex]?.dataset.name || '';
+  try {
+    const result = await apiPost('saveBeforeSnapshot', {
+      reworkId,
+      videoTitle: document.getElementById('snap-video-title').textContent,
+      channelId: chanSel.value,
+      channelName,
+      mode: 'manual',
+      viewsBefore: document.getElementById('snap-views-b').value,
+      impressionsBefore: document.getElementById('snap-imp-b').value,
+      ctrBefore: document.getElementById('snap-ctr-b').value,
+      watchTimeBefore: document.getElementById('snap-wt-b').value,
+      avgDurationBefore: document.getElementById('snap-dur-b').value,
+      subsBefore: document.getElementById('snap-subs-b').value,
+    });
+    closeModal('beforeSnapshot');
+    toast('Before stats saved ✓ — log after stats in 30 days', 'ok');
+    loadRework();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function openAfterSnapshot(snapId, videoTitle, viewsBefore, ctrBefore) {
+  document.getElementById('snap-after-id').value = snapId;
+  document.getElementById('snap-after-video-title').textContent = videoTitle;
+  document.getElementById('snap-before-summary').textContent =
+    `Before: ${fmt(viewsBefore)} views · CTR ${ctrBefore}%`;
+  ['snap-views-a','snap-imp-a','snap-ctr-a','snap-wt-a','snap-dur-a','snap-subs-a'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = '';
+  });
+  openModal('afterSnapshot');
+  // Close YT channels view and open it after
+  closeModal('afterSnapshot');
+  nav('ytchannels');
+  setTimeout(() => openModal('afterSnapshot'), 100);
+}
+
+async function submitAfterSnapshot() {
+  const id = document.getElementById('snap-after-id').value;
+  try {
+    const result = await apiPost('saveAfterSnapshot', {
+      id,
+      viewsAfter: document.getElementById('snap-views-a').value,
+      impressionsAfter: document.getElementById('snap-imp-a').value,
+      ctrAfter: document.getElementById('snap-ctr-a').value,
+      watchTimeAfter: document.getElementById('snap-wt-a').value,
+      avgDurationAfter: document.getElementById('snap-dur-a').value,
+      subsAfter: document.getElementById('snap-subs-a').value,
+    });
+    closeModal('afterSnapshot');
+    const sign = Number(result.viewsDelta) >= 0 ? '+' : '';
+    toast(`After stats saved! Views: ${sign}${result.viewsDelta}% · CTR: ${sign}${result.ctrDelta}%`, 'ok');
+    loadYTChannels();
+  } catch(e) { toast(e.message, 'err'); }
 }
 
 // ============================================================
