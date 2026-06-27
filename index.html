@@ -637,6 +637,19 @@ select option{background:#1a1a2e;color:#fff;}
 
       <!-- ADMIN -->
       <div class="view" id="view-admin">
+        <!-- 2FA Security Card -->
+        <div class="card" style="margin-bottom:14px;border:1px solid var(--acc-g);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <div class="sec-head" style="margin:0;">🔐 Admin 2FA — Google Authenticator</div>
+            <div id="twofa-status-badge"><span class="badge badge-red">Not set up</span></div>
+          </div>
+          <div id="twofa-status-desc" style="font-size:12px;color:var(--t2);margin-bottom:12px;">Admin panel has no protection. Click Setup 2FA to secure it with Google Authenticator.</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" id="setup-2fa-btn" onclick="initSetup2FA()">Setup 2FA</button>
+            <button class="btn btn-sm" id="test-2fa-btn" onclick="test2FA()" style="display:none;">Test code</button>
+          </div>
+        </div>
+
         <div class="g2" style="margin-bottom:14px;">
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
