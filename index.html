@@ -311,7 +311,7 @@ select option{background:#1a1a2e;color:#fff;}
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="logo-wrap" onclick="nav('dashboard');closeSidebar();" style="cursor:pointer;" title="Go to Dashboard">
+    <div class="logo-wrap" onclick="nav('dashboard'); closeSidebar();" style="cursor:pointer;" title="Go to Dashboard">
       <div class="logo-icon">G</div>
       <span class="logo-name">Goofify</span>
       <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme"><span id="theme-icon">☀️</span></button>
@@ -405,7 +405,11 @@ select option{background:#1a1a2e;color:#fff;}
   <!-- MAIN -->
   <div class="main">
     <div class="topbar">
-      <button class="hamburger" onclick="toggleSidebar()" id="hamburger-btn" data-open="false">☰</button>
+      <label for="sidebar-toggle" class="hamburger" title="Toggle menu">
+        <svg id="icon-burger" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg id="icon-close" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+      </label>
+      <input type="checkbox" id="sidebar-toggle" style="display:none;" onchange="handleSidebarToggle(this)">
       <span class="topbar-title" id="view-title">Dashboard</span>
       <div class="topbar-right">
         <button class="btn btn-sm" onclick="refreshView()">↻ Refresh</button>
@@ -2858,49 +2862,51 @@ async function submitAfterSnapshot() {
 // ============================================================
 //  MOBILE SIDEBAR
 // ============================================================
-function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const isOpen = sidebar.classList.contains('open');
-  if (isOpen) {
-    closeSidebar();
-  } else {
+function handleSidebarToggle(cb) {
+  if (cb.checked) {
     openSidebar();
+  } else {
+    closeSidebar();
   }
+}
+
+function toggleSidebar() {
+  const cb = document.getElementById('sidebar-toggle');
+  if (cb) { cb.checked = !cb.checked; handleSidebarToggle(cb); }
 }
 
 function openSidebar() {
   const sidebar = document.querySelector('.sidebar');
-  sidebar.classList.add('open');
-  updateHamburgerIcon(true);
+  if (sidebar) sidebar.classList.add('open');
+  document.getElementById('icon-burger').style.display = 'none';
+  document.getElementById('icon-close').style.display = 'block';
 }
 
 function closeSidebar() {
   const sidebar = document.querySelector('.sidebar');
-  if (!sidebar) return;
-  sidebar.classList.remove('open');
-  updateHamburgerIcon(false);
+  if (sidebar) sidebar.classList.remove('open');
+  const cb = document.getElementById('sidebar-toggle');
+  if (cb) cb.checked = false;
+  document.getElementById('icon-burger').style.display = 'block';
+  document.getElementById('icon-close').style.display = 'none';
 }
 
 function updateHamburgerIcon(isOpen) {
-  const btn = document.getElementById('hamburger-btn');
-  if (!btn) return;
-  btn.setAttribute('data-open', isOpen ? 'true' : 'false');
-  btn.innerHTML = isOpen
-    ? '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>'
-    : '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>';
+  const burger = document.getElementById('icon-burger');
+  const close = document.getElementById('icon-close');
+  if (burger) burger.style.display = isOpen ? 'none' : 'block';
+  if (close) close.style.display = isOpen ? 'block' : 'none';
 }
 
-// Single global click handler - only closes if click is truly outside
+// Close sidebar when clicking outside
 document.addEventListener('click', function(e) {
   const sidebar = document.querySelector('.sidebar');
-  const hamburger = document.getElementById('hamburger-btn');
+  const label = document.querySelector('label[for="sidebar-toggle"]');
   if (!sidebar || !sidebar.classList.contains('open')) return;
-  // Check if click is inside sidebar OR on hamburger button or its children
   const insideSidebar = sidebar.contains(e.target);
-  const onHamburger = hamburger && (hamburger === e.target || hamburger.contains(e.target));
-  if (!insideSidebar && !onHamburger) {
-    // Use requestAnimationFrame to ensure DOM is settled before closing
-    requestAnimationFrame(() => closeSidebar());
+  const onLabel = label && label.contains(e.target);
+  if (!insideSidebar && !onLabel) {
+    closeSidebar();
   }
 });
 
@@ -2915,7 +2921,7 @@ function closeSidebar() {
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
-      if (window.innerWidth <= 768) closeSidebar();
+      closeSidebar();
     });
   });
 });
@@ -2941,7 +2947,6 @@ function addNotification(icon, title, desc, section) {
   notifications.unshift(notif);
   saveNotifications();
   updateNotifBadge();
-  updateHamburgerIcon(false);
 }
 
 function updateNotifBadge() {
@@ -2970,7 +2975,6 @@ function toggleNotifications() {
     notifications.forEach(n => n.read = true);
     saveNotifications();
     updateNotifBadge();
-  updateHamburgerIcon(false);
   }
 }
 
@@ -3001,7 +3005,6 @@ function clearNotifications() {
   notifications = [];
   saveNotifications();
   updateNotifBadge();
-  updateHamburgerIcon(false);
   renderNotifications();
 }
 
@@ -3056,7 +3059,6 @@ async function checkSmartAlerts() {
     });
 
     updateNotifBadge();
-  updateHamburgerIcon(false);
   } catch(e) {}
 }
 
@@ -3230,7 +3232,6 @@ window.addEventListener('load',()=>{
   const saved=localStorage.getItem('goofify_user');
   if(saved){USER=JSON.parse(saved);enterApp();}
   updateNotifBadge();
-  updateHamburgerIcon(false);
 });
 </script>
 
