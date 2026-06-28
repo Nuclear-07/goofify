@@ -2879,8 +2879,14 @@ function closeSidebar() {
   const sidebar = document.querySelector('.sidebar');
   if (!sidebar) return;
   sidebar.classList.remove('open');
-  const btn = document.getElementById('hamburger-btn');
-  if (btn) btn.textContent = '☰';
+  // Force icon back to hamburger - try multiple times to be safe
+  const setIcon = () => {
+    const btn = document.getElementById('hamburger-btn');
+    if (btn) btn.textContent = '☰';
+  };
+  setIcon();
+  setTimeout(setIcon, 50);
+  setTimeout(setIcon, 150);
 }
 
 // Single global click handler - only closes if click is truly outside
@@ -2888,11 +2894,12 @@ document.addEventListener('click', function(e) {
   const sidebar = document.querySelector('.sidebar');
   const hamburger = document.getElementById('hamburger-btn');
   if (!sidebar || !sidebar.classList.contains('open')) return;
-  // Check if click is inside sidebar OR on hamburger button
+  // Check if click is inside sidebar OR on hamburger button or its children
   const insideSidebar = sidebar.contains(e.target);
-  const onHamburger = hamburger && hamburger.contains(e.target);
+  const onHamburger = hamburger && (hamburger === e.target || hamburger.contains(e.target));
   if (!insideSidebar && !onHamburger) {
-    closeSidebar();
+    // Use requestAnimationFrame to ensure DOM is settled before closing
+    requestAnimationFrame(() => closeSidebar());
   }
 });
 
