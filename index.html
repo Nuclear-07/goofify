@@ -405,7 +405,7 @@ select option{background:#1a1a2e;color:#fff;}
   <!-- MAIN -->
   <div class="main">
     <div class="topbar">
-      <button class="hamburger" onclick="toggleSidebar()" id="hamburger-btn">☰</button>
+      <button class="hamburger" onclick="toggleSidebar()" id="hamburger-btn" data-open="false">☰</button>
       <span class="topbar-title" id="view-title">Dashboard</span>
       <div class="topbar-right">
         <button class="btn btn-sm" onclick="refreshView()">↻ Refresh</button>
@@ -2871,22 +2871,23 @@ function toggleSidebar() {
 function openSidebar() {
   const sidebar = document.querySelector('.sidebar');
   sidebar.classList.add('open');
-  const btn = document.getElementById('hamburger-btn');
-  if (btn) btn.textContent = '✕';
+  updateHamburgerIcon(true);
 }
 
 function closeSidebar() {
   const sidebar = document.querySelector('.sidebar');
   if (!sidebar) return;
   sidebar.classList.remove('open');
-  // Force icon back to hamburger - try multiple times to be safe
-  const setIcon = () => {
-    const btn = document.getElementById('hamburger-btn');
-    if (btn) btn.textContent = '☰';
-  };
-  setIcon();
-  setTimeout(setIcon, 50);
-  setTimeout(setIcon, 150);
+  updateHamburgerIcon(false);
+}
+
+function updateHamburgerIcon(isOpen) {
+  const btn = document.getElementById('hamburger-btn');
+  if (!btn) return;
+  btn.setAttribute('data-open', isOpen ? 'true' : 'false');
+  btn.innerHTML = isOpen
+    ? '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>'
+    : '<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>';
 }
 
 // Single global click handler - only closes if click is truly outside
@@ -2940,6 +2941,7 @@ function addNotification(icon, title, desc, section) {
   notifications.unshift(notif);
   saveNotifications();
   updateNotifBadge();
+  updateHamburgerIcon(false);
 }
 
 function updateNotifBadge() {
@@ -2968,6 +2970,7 @@ function toggleNotifications() {
     notifications.forEach(n => n.read = true);
     saveNotifications();
     updateNotifBadge();
+  updateHamburgerIcon(false);
   }
 }
 
@@ -2998,6 +3001,7 @@ function clearNotifications() {
   notifications = [];
   saveNotifications();
   updateNotifBadge();
+  updateHamburgerIcon(false);
   renderNotifications();
 }
 
@@ -3052,6 +3056,7 @@ async function checkSmartAlerts() {
     });
 
     updateNotifBadge();
+  updateHamburgerIcon(false);
   } catch(e) {}
 }
 
@@ -3225,6 +3230,7 @@ window.addEventListener('load',()=>{
   const saved=localStorage.getItem('goofify_user');
   if(saved){USER=JSON.parse(saved);enterApp();}
   updateNotifBadge();
+  updateHamburgerIcon(false);
 });
 </script>
 
