@@ -1695,8 +1695,19 @@ async function apiPost(action, params={}) {
   return json.data;
 }
 async function checkApi() {
-  try { await api('getClusters'); document.getElementById('api-dot').className='api-dot'; }
-  catch(e) { document.getElementById('api-dot').className='api-dot off'; }
+  // Try up to 3 times with delays before showing red
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await api('getClusters');
+      document.getElementById('api-dot').className = 'api-dot';
+      return;
+    } catch(e) {
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    }
+  }
+  document.getElementById('api-dot').className = 'api-dot off';
 }
 async function saveApi() {
   API = document.getElementById('api-url-input').value.trim();
