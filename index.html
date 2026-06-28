@@ -1666,7 +1666,9 @@ async function enterApp(dev) {
     document.getElementById('add-topic-btn').style.display = 'inline-flex';
   }
 
-  checkApi(); loadAll();
+  // Small delay to ensure API URL is set before checking
+  setTimeout(() => checkApi(), 500);
+  loadAll();
   nav(IS_GUEST && GUEST_SECTIONS.length ? GUEST_SECTIONS[0] : 'dashboard');
 }
 
@@ -3949,6 +3951,8 @@ window.addEventListener('load',()=>{
   document.documentElement.setAttribute('data-theme',t);
   document.getElementById('theme-icon').textContent=t==='dark'?'☀️':'🌙';
   API=localStorage.getItem(API_KEY)||BAKED_API;
+  // Always persist the baked API URL
+  localStorage.setItem(API_KEY, API);
   // Check for guest token in URL
   const p=new URLSearchParams(window.location.search);
   const gt=p.get('guest');
