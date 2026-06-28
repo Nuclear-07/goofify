@@ -2873,28 +2873,28 @@ function openSidebar() {
   sidebar.classList.add('open');
   const btn = document.getElementById('hamburger-btn');
   if (btn) btn.textContent = '✕';
-  // Listen for outside clicks to close
-  setTimeout(() => {
-    document.addEventListener('click', outsideClickClose);
-  }, 10);
 }
 
 function closeSidebar() {
   const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
   sidebar.classList.remove('open');
   const btn = document.getElementById('hamburger-btn');
   if (btn) btn.textContent = '☰';
-  document.removeEventListener('click', outsideClickClose);
 }
 
-function outsideClickClose(e) {
+// Single global click handler - only closes if click is truly outside
+document.addEventListener('click', function(e) {
   const sidebar = document.querySelector('.sidebar');
   const hamburger = document.getElementById('hamburger-btn');
-  // If click is outside sidebar and not on hamburger button
-  if (sidebar && !sidebar.contains(e.target) && hamburger && !hamburger.contains(e.target)) {
+  if (!sidebar || !sidebar.classList.contains('open')) return;
+  // Check if click is inside sidebar OR on hamburger button
+  const insideSidebar = sidebar.contains(e.target);
+  const onHamburger = hamburger && hamburger.contains(e.target);
+  if (!insideSidebar && !onHamburger) {
     closeSidebar();
   }
-}
+});
 
 function closeSidebar() {
   const sidebar = document.querySelector('.sidebar');
