@@ -1604,8 +1604,13 @@ async function enterAsGuest() {
 async function enterApp(dev) {
   if (!USER) USER = { name: 'Dev User', email: 'dev@goofify.app', isSuperAdmin: true };
 
-  // Validate user against whitelist (skip for guest and dev mode)
-  if (!IS_GUEST && !dev && USER.email !== 'dev@goofify.app') {
+  // Super admin always gets full access - no API check needed
+  if (USER.email === 'gauravsmokal07@gmail.com' || USER.email === 'dev@goofify.app') {
+    USER.isSuperAdmin = true;
+    USER.role = 'Super Admin';
+    USER.allowedSections = ['dashboard','pipeline','topics','scripts','shoots','rework','analytics','ytchannels','shorts','reports','admin','settings'];
+  } else if (!IS_GUEST && !dev) {
+    // Validate other users against whitelist
     try {
       const validation = await api('validateUser', { email: USER.email });
       if (!validation.allowed) {
@@ -1616,18 +1621,13 @@ async function enterApp(dev) {
       }
       USER.role = validation.role;
       USER.allowedSections = validation.sections ? validation.sections.split(',') : [];
-      USER.isSuperAdmin = validation.isSuperAdmin;
+      USER.isSuperAdmin = false;
       if (validation.displayName) USER.name = validation.displayName;
     } catch(e) {
-      // If API error - grant access but limit to basic sections
-      if (USER.email === 'gauravsmokal07@gmail.com') {
-        USER.isSuperAdmin = true;
-        USER.role = 'Super Admin';
-      } else {
-        USER.role = 'Viewer';
-        USER.allowedSections = ['dashboard','pipeline','topics','reports'];
-        USER.isSuperAdmin = false;
-      }
+      // API error - give basic access
+      USER.role = 'Viewer';
+      USER.allowedSections = ['dashboard','pipeline','topics','reports'];
+      USER.isSuperAdmin = false;
     }
   }
 
@@ -3093,9 +3093,9 @@ function showAccessDenied(reason) {
 }
 
 function checkSectionAccess(section) {
-  // Super admin always has access
-  if (!USER || USER.isSuperAdmin || USER.email === 'gauravsmokal07@gmail.com') return true;
-  if (!USER.allowedSections) return true;
+  if (!USER) return true;
+  if (USER.isSuperAdmin || USER.email === 'gauravsmokal07@gmail.com' || USER.email === 'dev@goofify.app') return true;
+  if (!USER.allowedSections || USER.allowedSections.length === 0) return true;
   return USER.allowedSections.includes(section);
 }
 
@@ -3668,9 +3668,9 @@ function showAccessDenied(reason) {
 }
 
 function checkSectionAccess(section) {
-  // Super admin always has access
-  if (!USER || USER.isSuperAdmin || USER.email === 'gauravsmokal07@gmail.com') return true;
-  if (!USER.allowedSections) return true;
+  if (!USER) return true;
+  if (USER.isSuperAdmin || USER.email === 'gauravsmokal07@gmail.com' || USER.email === 'dev@goofify.app') return true;
+  if (!USER.allowedSections || USER.allowedSections.length === 0) return true;
   return USER.allowedSections.includes(section);
 }
 
