@@ -1687,7 +1687,7 @@ async function apiPost(action, params={}) {
   if (!json.success) throw new Error(json.error||'API error');
   return json.data;
 }
-async async function checkApi() {
+async function checkApi() {
   try { await api('getClusters'); document.getElementById('api-dot').className='api-dot'; }
   catch(e) { document.getElementById('api-dot').className='api-dot off'; }
 }
