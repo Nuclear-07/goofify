@@ -3378,12 +3378,7 @@ document.addEventListener('click', function(e) {
   }
 });
 
-function closeSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  sidebar.classList.remove('open');
-  overlay.classList.remove('open');
-}
+
 
 // Close sidebar when nav item clicked on mobile
 document.addEventListener('DOMContentLoaded', () => {
@@ -3672,243 +3667,39 @@ function deleteShort(id) {
 // ============================================================
 //  ACCESS CONTROL
 // ============================================================
-function showAccessDenied(reason) {
-  const existing = document.getElementById('access-denied-msg');
-  if (existing) existing.remove();
-  const div = document.createElement('div');
-  div.id = 'access-denied-msg';
-  div.style.cssText = 'position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;';
-  div.innerHTML = `
-    <div style="font-size:48px;">🔒</div>
-    <div style="font-family:Space Grotesk,sans-serif;font-size:24px;font-weight:700;">Access Denied</div>
-    <div style="font-size:14px;color:var(--t2);text-align:center;max-width:360px;">${reason}</div>
-    <div style="font-size:13px;color:var(--t3);">Contact gauravsmokal07@gmail.com to request access.</div>
-    <button class="btn btn-primary" onclick="document.getElementById('access-denied-msg').remove();signOut();">Sign out</button>
-  `;
-  document.body.appendChild(div);
-}
 
-function checkSectionAccess(section) {
-  if (!USER) return true;
-  if (USER.isSuperAdmin || USER.email === 'gauravsmokal07@gmail.com' || USER.email === 'dev@goofify.app') return true;
-  if (!USER.allowedSections || USER.allowedSections.length === 0) return true;
-  return USER.allowedSections.includes(section);
-}
 
-function showSectionBlocked(section) {
-  const titles = {
-    dashboard:'Dashboard', pipeline:'Pipeline', topics:'Topic inbox',
-    scripts:'Scripts', shoots:'Shoot planner', rework:'Rework tracker',
-    analytics:'Analytics', ytchannels:'YT Channels', shorts:'Shorts & Reels',
-    reports:'Reports', admin:'Admin panel', settings:'Settings'
-  };
-  const mainContent = document.querySelector('.content');
-  if (mainContent) {
-    mainContent.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;">
-        <div style="font-size:48px;">🔒</div>
-        <div style="font-size:20px;font-weight:700;">${titles[section]||section}</div>
-        <div style="font-size:14px;color:var(--t2);">Your role (${USER.role||'Viewer'}) doesn't have access to this section.</div>
-        <div style="font-size:13px;color:var(--t3);">Contact your admin to request access.</div>
-      </div>`;
-  }
-}
+
+
+
 
 // ============================================================
 //  USER MANAGEMENT JS
 // ============================================================
 
-async function loadUsersAndRoles() {
-  try {
-    const [users, roles] = await Promise.all([api('getUsers'), api('getRoles')]);
-    usersCache = users;
-    rolesCache = roles;
-    renderUsersList();
-    renderRolesList();
-    // Populate role dropdowns
-    const roleOpts = roles.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
-    ['user-role','edit-user-role'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.innerHTML = roleOpts + '<option value="Custom">Custom (set manually)</option>'; }
-    });
-  } catch(e) { toast('Users load error: ' + e.message, 'err'); }
-}
 
-function renderUsersList() {
-  const el = document.getElementById('users-list');
-  if (!el) return;
-  el.innerHTML = usersCache.length ? usersCache.map(u => `
-    <div class="settings-item" style="align-items:center;">
-      <div style="display:flex;align-items:center;gap:10px;flex:1;">
-        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">${(u.displayName||u.email).charAt(0).toUpperCase()}</div>
-        <div>
-          <div style="font-weight:600;font-size:13px;">${u.displayName||'—'} ${u.email === 'gauravsmokal07@gmail.com' ? '<span class="badge badge-pink">Super Admin</span>' : ''}</div>
-          <div style="font-size:11px;color:var(--t3);">${u.email}</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span class="badge" style="background:${getRoleColor(u.role)}22;color:${getRoleColor(u.role)};">${u.role||'Viewer'}</span>
-        <span class="badge ${u.status==='active'?'badge-green':'badge-red'}">${u.status||'active'}</span>
-        ${u.email !== 'gauravsmokal07@gmail.com' ? `
-        <button class="btn btn-sm" onclick="openEditUser('${u.id}','${u.email}','${u.displayName||''}','${u.role||''}','${u.sections||''}','${u.status||'active'}')">Edit</button>
-        <button class="btn btn-sm btn-danger" onclick="removeUser('${u.id}','${u.email}')">Remove</button>` : ''}
-      </div>
-    </div>`).join('')
-  : '<div style="color:var(--t3);font-size:12px;padding:10px 0;">No users added yet. Add your first user above.</div>';
-}
 
-function renderRolesList() {
-  const el = document.getElementById('roles-list');
-  if (!el) return;
-  el.innerHTML = rolesCache.length ? rolesCache.map(r => `
-    <div class="settings-item">
-      <div style="display:flex;align-items:center;gap:10px;flex:1;">
-        <div style="width:10px;height:10px;border-radius:50%;background:${r.color};flex-shrink:0;"></div>
-        <div>
-          <div style="font-weight:600;font-size:13px;">${r.name}</div>
-          <div style="font-size:11px;color:var(--t3);">${(r.sections||'').split(',').length} sections</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;flex:2;">
-        ${(r.sections||'').split(',').map(s => `<span class="badge badge-blue" style="font-size:9px;">${s}</span>`).join('')}
-      </div>
-      ${r.name !== 'Super Admin' ? `<button class="btn btn-sm btn-danger" onclick="removeRole('${r.id}','${r.name}')">Delete</button>` : ''}
-    </div>`).join('')
-  : '<div style="color:var(--t3);font-size:12px;">No roles yet.</div>';
-}
 
-function getRoleColor(roleName) {
-  const r = rolesCache.find(x => x.name === roleName);
-  return r ? r.color : '#6366f1';
-}
 
-function onUserRoleChange(val) {
-  const preview = document.getElementById('user-role-sections-preview');
-  const custom = document.getElementById('user-custom-sections');
-  if (val === 'Custom') {
-    custom.style.display = 'block';
-    if (preview) preview.textContent = '';
-  } else {
-    custom.style.display = 'none';
-    const role = rolesCache.find(r => r.name === val);
-    if (role && preview) preview.textContent = 'Access: ' + (role.sections||'').split(',').join(', ');
-  }
-}
 
-function onEditUserRoleChange(val) {
-  const preview = document.getElementById('edit-user-sections-preview');
-  const custom = document.getElementById('edit-user-custom-sections');
-  if (val === 'Custom') {
-    custom.style.display = 'block';
-    if (preview) preview.textContent = '';
-  } else {
-    custom.style.display = 'none';
-    const role = rolesCache.find(r => r.name === val);
-    if (role && preview) preview.textContent = 'Access: ' + (role.sections||'').split(',').join(', ');
-  }
-}
 
-async function submitAddUser() {
-  const email = document.getElementById('user-email').value.trim();
-  const name = document.getElementById('user-name').value.trim();
-  const role = document.getElementById('user-role').value;
-  if (!email) { toast('Enter email address', 'err'); return; }
-  let sections = '';
-  if (role === 'Custom') {
-    const checked = [...document.querySelectorAll('input[name="user-section"]:checked')];
-    sections = checked.map(c => c.value).join(',');
-    if (!sections) { toast('Select at least one section', 'err'); return; }
-  } else {
-    const r = rolesCache.find(x => x.name === role);
-    sections = r ? r.sections : 'dashboard';
-  }
-  try {
-    await apiPost('addUser', { email, displayName: name, role, sections });
-    closeModal('addUser');
-    toast('User added ✓', 'ok');
-    document.getElementById('user-email').value = '';
-    document.getElementById('user-name').value = '';
-    loadUsersAndRoles();
-  } catch(e) { toast(e.message, 'err'); }
-}
 
-function openEditUser(id, email, name, role, sections, status) {
-  document.getElementById('edit-user-id').value = id;
-  document.getElementById('edit-user-email-val').value = email;
-  document.getElementById('edit-user-email-display').textContent = email;
-  document.getElementById('edit-user-name').value = name;
-  document.getElementById('edit-user-role').value = role;
-  document.getElementById('edit-user-status').value = status;
-  onEditUserRoleChange(role);
-  if (role === 'Custom' && sections) {
-    sections.split(',').forEach(s => {
-      const cb = document.querySelector(`input[name="edit-user-section"][value="${s}"]`);
-      if (cb) cb.checked = true;
-    });
-  }
-  openModal('editUser');
-}
 
-async function submitEditUser() {
-  const id = document.getElementById('edit-user-id').value;
-  const email = document.getElementById('edit-user-email-val').value;
-  const role = document.getElementById('edit-user-role').value;
-  let sections = '';
-  if (role === 'Custom') {
-    const checked = [...document.querySelectorAll('input[name="edit-user-section"]:checked')];
-    sections = checked.map(c => c.value).join(',');
-  } else {
-    const r = rolesCache.find(x => x.name === role);
-    sections = r ? r.sections : 'dashboard';
-  }
-  try {
-    await apiPost('updateUser', {
-      id, email,
-      displayName: document.getElementById('edit-user-name').value,
-      role, sections,
-      status: document.getElementById('edit-user-status').value
-    });
-    closeModal('editUser');
-    toast('User updated ✓', 'ok');
-    loadUsersAndRoles();
-  } catch(e) { toast(e.message, 'err'); }
-}
 
-async function removeUser(id, email) {
-  if (!confirm(`Remove ${email} from Goofify?`)) return;
-  try {
-    await apiPost('deleteUser', { id, email });
-    toast('User removed', 'ok');
-    loadUsersAndRoles();
-  } catch(e) { toast(e.message, 'err'); }
-}
 
-async function submitAddRole() {
-  const name = document.getElementById('role-name').value.trim();
-  if (!name) { toast('Enter role name', 'err'); return; }
-  const checked = [...document.querySelectorAll('input[name="role-section"]:checked')];
-  const sections = checked.map(c => c.value).join(',');
-  if (!sections) { toast('Select at least one section', 'err'); return; }
-  try {
-    await apiPost('addRole', {
-      name, sections,
-      color: document.getElementById('role-color').value
-    });
-    closeModal('addRole');
-    toast('Role created ✓', 'ok');
-    document.getElementById('role-name').value = '';
-    loadUsersAndRoles();
-  } catch(e) { toast(e.message, 'err'); }
-}
 
-async function removeRole(id, name) {
-  if (!confirm(`Delete role "${name}"?`)) return;
-  try {
-    await apiPost('deleteRole', { id, name });
-    toast('Role deleted', 'ok');
-    loadUsersAndRoles();
-  } catch(e) { toast(e.message, 'err'); }
-}
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ============================================================
 //  MOBILE SIDEBAR
@@ -3962,6 +3753,7 @@ window.addEventListener('load',()=>{
   document.documentElement.setAttribute('data-theme',t);
   document.getElementById('theme-icon').textContent=t==='dark'?'☀️':'🌙';
   API=localStorage.getItem(API_KEY)||BAKED_API;
+  localStorage.setItem(API_KEY, API);
   // Always persist the baked API URL
   localStorage.setItem(API_KEY, API);
   // Check for guest token in URL
