@@ -47,8 +47,7 @@ html,body{height:100%;}
 body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);background-image:var(--bg-grad);background-attachment:fixed;color:var(--t1);font-size:13px;overflow:hidden;-webkit-font-smoothing:antialiased;}
 /* LAYOUT */
 .app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:0;min-width:0;overflow:hidden;background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:0px solid var(--gb);display:flex;flex-direction:column;z-index:10;transition:width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),min-width 0.3s cubic-bezier(0.25,0.46,0.45,0.94),border-right-width 0.3s;}
-.sidebar.open{width:var(--sidebar-w);min-width:var(--sidebar-w);border-right-width:1px;}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:1px solid var(--gb);display:flex;flex-direction:column;z-index:10;transition:width 0.3s ease,min-width 0.3s ease;}
 .main{flex:1;min-width:0;}
 .logo-wrap{padding:16px 14px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--gb);}
 .logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--acc),var(--pink));border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;box-shadow:0 4px 16px var(--acc-g);}
@@ -94,7 +93,7 @@ body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);backgroun
 .api-dot.off{background:var(--red);}
 /* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;}
-.topbar{height:var(--topbar-h);background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--gb);padding:0 20px 0 58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:5;}
+.topbar{height:var(--topbar-h);background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:1px solid var(--gb);padding:0 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;z-index:5;}
 .topbar-title{font-size:15px;font-weight:600;letter-spacing:-0.2px;}
 .topbar-right{display:flex;align-items:center;gap:8px;}
 .content{flex:1;overflow-y:auto;padding:20px;}
@@ -280,37 +279,40 @@ select option{background:#1a1a2e;color:#fff;}
   .k-col { min-width:145px;max-width:145px; }
 }
 
-/* HAMBURGER */
-.hamburger{display:flex;align-items:center;justify-content:center;min-width:36px;height:34px;background:var(--glass);border:1px solid var(--gb);border-radius:8px;padding:0 12px;cursor:pointer;color:var(--t1);font-size:16px;font-weight:500;backdrop-filter:var(--blur-sm);transition:all 0.2s;flex-shrink:0;}
-.hamburger:hover{background:var(--glass-h);border-color:var(--gb-h);}
+
+
+/* MOBILE SIDEBAR */
+@media (max-width:768px) {
+  .mob-hamburger { display:flex !important; }
+  .sidebar {
+    position:fixed !important;
+    left:-240px !important;
+    top:0 !important;
+    bottom:0 !important;
+    width:230px !important;
+    min-width:230px !important;
+    z-index:50 !important;
+    transition:left 0.25s ease !important;
+    box-shadow:4px 0 32px rgba(0,0,0,0.6) !important;
+    overflow-y:auto !important;
+  }
+  .sidebar.mob-open { left:0 !important; }
+  .mob-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:49; backdrop-filter:blur(2px); }
+  .mob-overlay.show { display:block; }
+  .topbar { padding-left:52px !important; }
+  .g2,.g3,.g4 { grid-template-columns:1fr !important; }
+  .form-row { grid-template-columns:1fr !important; }
+  .modal { width:94vw !important; padding:16px !important; }
+  .content { padding:14px !important; }
+}
+@media (min-width:769px) {
+  .mob-hamburger { display:none !important; }
+  .mob-overlay { display:none !important; }
+}
 </style>
 </head>
 <body>
 
-
-<!-- FIXED HAMBURGER - always in DOM, never re-rendered -->
-<button id="hamburger-btn" onclick="toggleSidebar()" style="
-  position:fixed;
-  top:12px;
-  left:12px;
-  z-index:1000;
-  width:36px;
-  height:36px;
-  border-radius:9px;
-  border:1px solid rgba(255,255,255,0.10);
-  background:rgba(255,255,255,0.06);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:background 0.2s;
-  color:rgba(255,255,255,0.85);
-" title="Toggle menu">
-  <svg id="icon-burger" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-  <svg id="icon-close" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;"><path stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-</button>
 
 <!-- LOGIN -->
 <div class="login-screen" id="login-screen">
@@ -336,7 +338,7 @@ select option{background:#1a1a2e;color:#fff;}
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="logo-wrap" onclick="nav('dashboard'); closeSidebar();" style="cursor:pointer;" title="Go to Dashboard">
+    <div class="logo-wrap" onclick="nav('dashboard'); if(window.innerWidth <= 768) mobClose();" style="cursor:pointer;" title="Go to Dashboard">
       <div class="logo-icon">G</div>
       <span class="logo-name">Goofify</span>
       <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme"><span id="theme-icon">☀️</span></button>
@@ -430,6 +432,8 @@ select option{background:#1a1a2e;color:#fff;}
   <!-- MAIN -->
   <div class="main">
     <div class="topbar">
+      <button class="mob-hamburger" onclick="mobToggle()" style="display:none;position:fixed;top:10px;left:10px;z-index:51;width:36px;height:36px;border-radius:9px;border:1px solid var(--gb);background:var(--glass);backdrop-filter:var(--blur-sm);cursor:pointer;color:var(--t1);font-size:18px;align-items:center;justify-content:center;" id="mob-btn">☰</button>
+      <div class="mob-overlay" id="mob-overlay" onclick="mobClose()"></div>
       <span class="topbar-title" id="view-title">Dashboard</span>
       <div class="topbar-right">
         <button class="btn btn-sm" onclick="refreshView()">↻ Refresh</button>
@@ -2886,7 +2890,7 @@ function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');
   if (!sidebar) return;
   if (sidebar.classList.contains('open')) {
-    if(document.querySelector('.sidebar.open')) closeSidebar();
+    if(window.innerWidth <= 768) mobClose();
   } else {
     openSidebar();
   }
@@ -2916,7 +2920,7 @@ document.addEventListener('click', function(e) {
   const insideSidebar = sidebar.contains(e.target);
   const onBtn = btn && btn.contains(e.target);
   if (!insideSidebar && !onBtn) {
-    if(document.querySelector('.sidebar.open')) closeSidebar();
+    if(window.innerWidth <= 768) mobClose();
   }
 });
 
@@ -2931,7 +2935,7 @@ function closeSidebar() {
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
-      if(document.querySelector('.sidebar.open')) closeSidebar();
+      if(window.innerWidth <= 768) mobClose();
     });
   });
 });
@@ -3207,6 +3211,36 @@ function deleteShort(id) {
   saveShorts();
   toast('Deleted', 'ok');
   loadShorts();
+}
+
+
+// ============================================================
+//  MOBILE SIDEBAR
+// ============================================================
+function mobToggle() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('mob-overlay');
+  const btn = document.getElementById('mob-btn');
+  if (!sidebar) return;
+  const isOpen = sidebar.classList.contains('mob-open');
+  if (isOpen) {
+    sidebar.classList.remove('mob-open');
+    if (overlay) overlay.classList.remove('show');
+    if (btn) btn.textContent = '☰';
+  } else {
+    sidebar.classList.add('mob-open');
+    if (overlay) overlay.classList.add('show');
+    if (btn) btn.textContent = '✕';
+  }
+}
+
+function mobClose() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('mob-overlay');
+  const btn = document.getElementById('mob-btn');
+  if (sidebar) sidebar.classList.remove('mob-open');
+  if (overlay) overlay.classList.remove('show');
+  if (btn) btn.textContent = '☰';
 }
 
 // ============================================================
