@@ -736,6 +736,31 @@ select option{background:#1a1a2e;color:#fff;}
 
       <!-- ADMIN -->
       <div class="view" id="view-admin">
+
+        <!-- Users & Access -->
+        <div class="card" style="margin-bottom:14px;grid-column:1/-1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div>
+              <div class="sec-head" style="margin:0;">👥 Users & Access</div>
+              <div style="font-size:12px;color:var(--t3);margin-top:4px;">Control who can access Goofify and what they can see</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('addUser')">+ Add user</button>
+          </div>
+          <div id="users-list"></div>
+        </div>
+
+        <!-- Roles -->
+        <div class="card" style="margin-bottom:14px;grid-column:1/-1;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <div>
+              <div class="sec-head" style="margin:0;">🎭 Roles</div>
+              <div style="font-size:12px;color:var(--t3);margin-top:4px;">Create and manage roles with custom section access</div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('addRole')">+ Create role</button>
+          </div>
+          <div id="roles-list"></div>
+        </div>
+
         <!-- 2FA Security Card -->
         <div class="card" style="margin-bottom:14px;border:1px solid var(--acc-g);">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
@@ -987,6 +1012,126 @@ select option{background:#1a1a2e;color:#fff;}
   </div>
 </div>
 <!-- ============================================================ MODALS ============================================================ -->
+<!-- Add User Modal -->
+<div class="overlay" id="modal-addUser">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Add user</div>
+      <button class="modal-close" onclick="closeModal('addUser')">✕</button>
+    </div>
+    <div class="form-group"><div class="form-label">Email address</div><input id="user-email" type="email" placeholder="colleague@mindbowser.com"></div>
+    <div class="form-group"><div class="form-label">Display name</div><input id="user-name" placeholder="e.g. Rahul K."></div>
+    <div class="form-group">
+      <div class="form-label">Role</div>
+      <select id="user-role" onchange="onUserRoleChange(this.value)"></select>
+    </div>
+    <div class="form-group" id="user-custom-sections" style="display:none;">
+      <div class="form-label">Custom section access</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--gs);border:1px solid var(--gb);border-radius:var(--radius-sm);padding:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="dashboard" style="width:auto;"> Dashboard</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="pipeline" style="width:auto;"> Pipeline</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="topics" style="width:auto;"> Topic inbox</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="scripts" style="width:auto;"> Scripts</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="shoots" style="width:auto;"> Shoot planner</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="rework" style="width:auto;"> Rework tracker</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="analytics" style="width:auto;"> YT / LinkedIn</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="ytchannels" style="width:auto;"> YT Channels</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="shorts" style="width:auto;"> Shorts & Reels</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="reports" style="width:auto;"> Reports</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="admin" style="width:auto;"> Admin panel</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="user-section" value="settings" style="width:auto;"> Settings</label>
+      </div>
+    </div>
+    <div id="user-role-sections-preview" style="font-size:12px;color:var(--t3);margin-top:8px;"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addUser')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAddUser()">Add user</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="overlay" id="modal-editUser">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Edit user</div>
+      <button class="modal-close" onclick="closeModal('editUser')">✕</button>
+    </div>
+    <input type="hidden" id="edit-user-id">
+    <input type="hidden" id="edit-user-email-val">
+    <div style="font-size:13px;color:var(--acc-l);margin-bottom:14px;font-weight:500;" id="edit-user-email-display"></div>
+    <div class="form-group"><div class="form-label">Display name</div><input id="edit-user-name"></div>
+    <div class="form-group">
+      <div class="form-label">Role</div>
+      <select id="edit-user-role" onchange="onEditUserRoleChange(this.value)"></select>
+    </div>
+    <div class="form-group" id="edit-user-custom-sections" style="display:none;">
+      <div class="form-label">Custom section access</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--gs);border:1px solid var(--gb);border-radius:var(--radius-sm);padding:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="dashboard" style="width:auto;"> Dashboard</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="pipeline" style="width:auto;"> Pipeline</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="topics" style="width:auto;"> Topic inbox</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="scripts" style="width:auto;"> Scripts</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="shoots" style="width:auto;"> Shoot planner</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="rework" style="width:auto;"> Rework tracker</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="analytics" style="width:auto;"> YT / LinkedIn</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="ytchannels" style="width:auto;"> YT Channels</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="shorts" style="width:auto;"> Shorts & Reels</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="reports" style="width:auto;"> Reports</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="admin" style="width:auto;"> Admin panel</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="edit-user-section" value="settings" style="width:auto;"> Settings</label>
+      </div>
+    </div>
+    <div id="edit-user-sections-preview" style="font-size:12px;color:var(--t3);margin-top:8px;"></div>
+    <div class="form-group">
+      <div class="form-label">Status</div>
+      <select id="edit-user-status">
+        <option value="active">Active</option>
+        <option value="suspended">Suspended</option>
+      </select>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('editUser')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitEditUser()">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Role Modal -->
+<div class="overlay" id="modal-addRole">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Create role</div>
+      <button class="modal-close" onclick="closeModal('addRole')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Role name</div><input id="role-name" placeholder="e.g. Marketing Lead, Client, Intern"></div>
+      <div class="form-group"><div class="form-label">Color</div><input type="color" id="role-color" value="#6366f1" style="height:40px;padding:4px;"></div>
+    </div>
+    <div class="form-group">
+      <div class="form-label">Section access</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--gs);border:1px solid var(--gb);border-radius:var(--radius-sm);padding:12px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="dashboard" style="width:auto;"> Dashboard</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="pipeline" style="width:auto;"> Pipeline</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="topics" style="width:auto;"> Topic inbox</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="scripts" style="width:auto;"> Scripts</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="shoots" style="width:auto;"> Shoot planner</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="rework" style="width:auto;"> Rework tracker</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="analytics" style="width:auto;"> YT / LinkedIn</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="ytchannels" style="width:auto;"> YT Channels</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="shorts" style="width:auto;"> Shorts & Reels</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="reports" style="width:auto;"> Reports</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="admin" style="width:auto;"> Admin panel</label>
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;padding:4px 0;"><input type="checkbox" name="role-section" value="settings" style="width:auto;"> Settings</label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addRole')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitAddRole()">Create role</button>
+    </div>
+  </div>
+</div>
+
 <!-- Add Short Modal -->
 <div class="overlay" id="modal-addShort">
   <div class="modal">
@@ -1456,25 +1601,63 @@ async function enterAsGuest() {
   } catch(e) { toast('Could not validate: ' + e.message, 'err'); }
 }
 
-function enterApp(dev) {
+async function enterApp(dev) {
+  if (!USER) USER = { name: 'Dev User', email: 'dev@goofify.app', isSuperAdmin: true };
+
+  // Validate user against whitelist (skip for guest and dev mode)
+  if (!IS_GUEST && !dev && USER.email !== 'dev@goofify.app') {
+    try {
+      const validation = await api('validateUser', { email: USER.email });
+      if (!validation.allowed) {
+        localStorage.removeItem('goofify_user');
+        USER = null;
+        showAccessDenied(validation.reason || 'You do not have access to this workspace.');
+        return;
+      }
+      USER.role = validation.role;
+      USER.allowedSections = validation.sections ? validation.sections.split(',') : [];
+      USER.isSuperAdmin = validation.isSuperAdmin;
+      if (validation.displayName) USER.name = validation.displayName;
+    } catch(e) {
+      // If API error - grant access but limit to basic sections
+      if (USER.email === 'gauravsmokal07@gmail.com') {
+        USER.isSuperAdmin = true;
+        USER.role = 'Super Admin';
+      } else {
+        USER.role = 'Viewer';
+        USER.allowedSections = ['dashboard','pipeline','topics','reports'];
+        USER.isSuperAdmin = false;
+      }
+    }
+  }
+
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-shell').style.display = 'flex';
-  if (!USER) USER = { name: 'Dev User', email: 'dev@goofify.app' };
+
   const ini = USER.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('user-av').textContent = ini;
   document.getElementById('user-name').textContent = USER.name;
-  document.getElementById('user-role').textContent = IS_GUEST ? 'Guest' : 'Admin';
+  document.getElementById('user-role-label').textContent = IS_GUEST ? 'Guest' : (USER.role || 'Admin');
   document.getElementById('settings-email').textContent = USER.email;
-  if (!IS_GUEST && USER && (USER.email === 'gauravsmokal07@gmail.com' || USER.email === 'dev@goofify.app')) {
+
+  // Show/hide admin nav based on role
+  const isSuperAdmin = USER.isSuperAdmin || USER.email === 'gauravsmokal07@gmail.com' || USER.email === 'dev@goofify.app';
+  if (!IS_GUEST && isSuperAdmin) {
     document.getElementById('admin-nav').style.display = 'block';
     document.getElementById('add-topic-btn').style.display = 'inline-flex';
-  } else {
+  } else if (!IS_GUEST && USER.allowedSections && USER.allowedSections.includes('admin')) {
+    document.getElementById('admin-nav').style.display = 'block';
+    document.getElementById('add-topic-btn').style.display = 'inline-flex';
+  } else if (IS_GUEST) {
     document.getElementById('add-topic-btn').style.display = 'none';
     ['dashboard','pipeline','topics','shoots','scripts','drive','rework','analytics','reports'].forEach(v => {
       if (!GUEST_SECTIONS.includes(v)) { const el = document.getElementById('nav-'+v); if(el) el.style.display='none'; }
     });
     ['nav-scripts','nav-drive'].forEach(id => { const el = document.getElementById(id); if(el) el.style.display='none'; });
+  } else {
+    document.getElementById('add-topic-btn').style.display = 'inline-flex';
   }
+
   checkApi(); loadAll();
   nav(IS_GUEST && GUEST_SECTIONS.length ? GUEST_SECTIONS[0] : 'dashboard');
 }
@@ -1634,6 +1817,11 @@ function nav(name) {
 }
 function refreshView() { loadView(CURRENT_VIEW); }
 function loadView(n) {
+  // Check section access
+  if (!checkSectionAccess(n)) {
+    showSectionBlocked(n);
+    return;
+  }
   if(n==='dashboard') loadDashboard();
   else if(n==='pipeline') loadPipeline();
   else if(n==='topics') loadTopics();
@@ -2236,6 +2424,7 @@ function copyReportText(){
 //  ADMIN
 // ============================================================
 async function loadAdmin() {
+  loadUsersAndRoles();
   try {
     const [clusters,stages,seo,leaders,guests,activity]=await Promise.all([
       api('getClusters'),api('getStages'),api('getSeoTeam'),api('getLeaders'),api('getGuestTokens'),api('getActivity',{limit:30})
@@ -2883,6 +3072,250 @@ async function submitAfterSnapshot() {
 }
 
 
+
+// ============================================================
+//  ACCESS CONTROL
+// ============================================================
+function showAccessDenied(reason) {
+  const existing = document.getElementById('access-denied-msg');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'access-denied-msg';
+  div.style.cssText = 'position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;';
+  div.innerHTML = `
+    <div style="font-size:48px;">🔒</div>
+    <div style="font-family:Space Grotesk,sans-serif;font-size:24px;font-weight:700;">Access Denied</div>
+    <div style="font-size:14px;color:var(--t2);text-align:center;max-width:360px;">${reason}</div>
+    <div style="font-size:13px;color:var(--t3);">Contact gauravsmokal07@gmail.com to request access.</div>
+    <button class="btn btn-primary" onclick="document.getElementById('access-denied-msg').remove();signOut();">Sign out</button>
+  `;
+  document.body.appendChild(div);
+}
+
+function checkSectionAccess(section) {
+  // Super admin always has access
+  if (!USER || USER.isSuperAdmin || USER.email === 'gauravsmokal07@gmail.com') return true;
+  if (!USER.allowedSections) return true;
+  return USER.allowedSections.includes(section);
+}
+
+function showSectionBlocked(section) {
+  const titles = {
+    dashboard:'Dashboard', pipeline:'Pipeline', topics:'Topic inbox',
+    scripts:'Scripts', shoots:'Shoot planner', rework:'Rework tracker',
+    analytics:'Analytics', ytchannels:'YT Channels', shorts:'Shorts & Reels',
+    reports:'Reports', admin:'Admin panel', settings:'Settings'
+  };
+  const mainContent = document.querySelector('.content');
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;">
+        <div style="font-size:48px;">🔒</div>
+        <div style="font-size:20px;font-weight:700;">${titles[section]||section}</div>
+        <div style="font-size:14px;color:var(--t2);">Your role (${USER.role||'Viewer'}) doesn't have access to this section.</div>
+        <div style="font-size:13px;color:var(--t3);">Contact your admin to request access.</div>
+      </div>`;
+  }
+}
+
+// ============================================================
+//  USER MANAGEMENT JS
+// ============================================================
+let usersCache = [];
+let rolesCache = [];
+
+async function loadUsersAndRoles() {
+  try {
+    const [users, roles] = await Promise.all([api('getUsers'), api('getRoles')]);
+    usersCache = users;
+    rolesCache = roles;
+    renderUsersList();
+    renderRolesList();
+    // Populate role dropdowns
+    const roleOpts = roles.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
+    ['user-role','edit-user-role'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.innerHTML = roleOpts + '<option value="Custom">Custom (set manually)</option>'; }
+    });
+  } catch(e) { toast('Users load error: ' + e.message, 'err'); }
+}
+
+function renderUsersList() {
+  const el = document.getElementById('users-list');
+  if (!el) return;
+  el.innerHTML = usersCache.length ? usersCache.map(u => `
+    <div class="settings-item" style="align-items:center;">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;">
+        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">${(u.displayName||u.email).charAt(0).toUpperCase()}</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;">${u.displayName||'—'} ${u.email === 'gauravsmokal07@gmail.com' ? '<span class="badge badge-pink">Super Admin</span>' : ''}</div>
+          <div style="font-size:11px;color:var(--t3);">${u.email}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge" style="background:${getRoleColor(u.role)}22;color:${getRoleColor(u.role)};">${u.role||'Viewer'}</span>
+        <span class="badge ${u.status==='active'?'badge-green':'badge-red'}">${u.status||'active'}</span>
+        ${u.email !== 'gauravsmokal07@gmail.com' ? `
+        <button class="btn btn-sm" onclick="openEditUser('${u.id}','${u.email}','${u.displayName||''}','${u.role||''}','${u.sections||''}','${u.status||'active'}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="removeUser('${u.id}','${u.email}')">Remove</button>` : ''}
+      </div>
+    </div>`).join('')
+  : '<div style="color:var(--t3);font-size:12px;padding:10px 0;">No users added yet. Add your first user above.</div>';
+}
+
+function renderRolesList() {
+  const el = document.getElementById('roles-list');
+  if (!el) return;
+  el.innerHTML = rolesCache.length ? rolesCache.map(r => `
+    <div class="settings-item">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${r.color};flex-shrink:0;"></div>
+        <div>
+          <div style="font-weight:600;font-size:13px;">${r.name}</div>
+          <div style="font-size:11px;color:var(--t3);">${(r.sections||'').split(',').length} sections</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;flex:2;">
+        ${(r.sections||'').split(',').map(s => `<span class="badge badge-blue" style="font-size:9px;">${s}</span>`).join('')}
+      </div>
+      ${r.name !== 'Super Admin' ? `<button class="btn btn-sm btn-danger" onclick="removeRole('${r.id}','${r.name}')">Delete</button>` : ''}
+    </div>`).join('')
+  : '<div style="color:var(--t3);font-size:12px;">No roles yet.</div>';
+}
+
+function getRoleColor(roleName) {
+  const r = rolesCache.find(x => x.name === roleName);
+  return r ? r.color : '#6366f1';
+}
+
+function onUserRoleChange(val) {
+  const preview = document.getElementById('user-role-sections-preview');
+  const custom = document.getElementById('user-custom-sections');
+  if (val === 'Custom') {
+    custom.style.display = 'block';
+    if (preview) preview.textContent = '';
+  } else {
+    custom.style.display = 'none';
+    const role = rolesCache.find(r => r.name === val);
+    if (role && preview) preview.textContent = 'Access: ' + (role.sections||'').split(',').join(', ');
+  }
+}
+
+function onEditUserRoleChange(val) {
+  const preview = document.getElementById('edit-user-sections-preview');
+  const custom = document.getElementById('edit-user-custom-sections');
+  if (val === 'Custom') {
+    custom.style.display = 'block';
+    if (preview) preview.textContent = '';
+  } else {
+    custom.style.display = 'none';
+    const role = rolesCache.find(r => r.name === val);
+    if (role && preview) preview.textContent = 'Access: ' + (role.sections||'').split(',').join(', ');
+  }
+}
+
+async function submitAddUser() {
+  const email = document.getElementById('user-email').value.trim();
+  const name = document.getElementById('user-name').value.trim();
+  const role = document.getElementById('user-role').value;
+  if (!email) { toast('Enter email address', 'err'); return; }
+  let sections = '';
+  if (role === 'Custom') {
+    const checked = [...document.querySelectorAll('input[name="user-section"]:checked')];
+    sections = checked.map(c => c.value).join(',');
+    if (!sections) { toast('Select at least one section', 'err'); return; }
+  } else {
+    const r = rolesCache.find(x => x.name === role);
+    sections = r ? r.sections : 'dashboard';
+  }
+  try {
+    await apiPost('addUser', { email, displayName: name, role, sections });
+    closeModal('addUser');
+    toast('User added ✓', 'ok');
+    document.getElementById('user-email').value = '';
+    document.getElementById('user-name').value = '';
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function openEditUser(id, email, name, role, sections, status) {
+  document.getElementById('edit-user-id').value = id;
+  document.getElementById('edit-user-email-val').value = email;
+  document.getElementById('edit-user-email-display').textContent = email;
+  document.getElementById('edit-user-name').value = name;
+  document.getElementById('edit-user-role').value = role;
+  document.getElementById('edit-user-status').value = status;
+  onEditUserRoleChange(role);
+  if (role === 'Custom' && sections) {
+    sections.split(',').forEach(s => {
+      const cb = document.querySelector(`input[name="edit-user-section"][value="${s}"]`);
+      if (cb) cb.checked = true;
+    });
+  }
+  openModal('editUser');
+}
+
+async function submitEditUser() {
+  const id = document.getElementById('edit-user-id').value;
+  const email = document.getElementById('edit-user-email-val').value;
+  const role = document.getElementById('edit-user-role').value;
+  let sections = '';
+  if (role === 'Custom') {
+    const checked = [...document.querySelectorAll('input[name="edit-user-section"]:checked')];
+    sections = checked.map(c => c.value).join(',');
+  } else {
+    const r = rolesCache.find(x => x.name === role);
+    sections = r ? r.sections : 'dashboard';
+  }
+  try {
+    await apiPost('updateUser', {
+      id, email,
+      displayName: document.getElementById('edit-user-name').value,
+      role, sections,
+      status: document.getElementById('edit-user-status').value
+    });
+    closeModal('editUser');
+    toast('User updated ✓', 'ok');
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function removeUser(id, email) {
+  if (!confirm(`Remove ${email} from Goofify?`)) return;
+  try {
+    await apiPost('deleteUser', { id, email });
+    toast('User removed', 'ok');
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function submitAddRole() {
+  const name = document.getElementById('role-name').value.trim();
+  if (!name) { toast('Enter role name', 'err'); return; }
+  const checked = [...document.querySelectorAll('input[name="role-section"]:checked')];
+  const sections = checked.map(c => c.value).join(',');
+  if (!sections) { toast('Select at least one section', 'err'); return; }
+  try {
+    await apiPost('addRole', {
+      name, sections,
+      color: document.getElementById('role-color').value
+    });
+    closeModal('addRole');
+    toast('Role created ✓', 'ok');
+    document.getElementById('role-name').value = '';
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function removeRole(id, name) {
+  if (!confirm(`Delete role "${name}"?`)) return;
+  try {
+    await apiPost('deleteRole', { id, name });
+    toast('Role deleted', 'ok');
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
 // ============================================================
 //  MOBILE SIDEBAR
 // ============================================================
@@ -3213,6 +3646,250 @@ function deleteShort(id) {
   loadShorts();
 }
 
+
+
+// ============================================================
+//  ACCESS CONTROL
+// ============================================================
+function showAccessDenied(reason) {
+  const existing = document.getElementById('access-denied-msg');
+  if (existing) existing.remove();
+  const div = document.createElement('div');
+  div.id = 'access-denied-msg';
+  div.style.cssText = 'position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;gap:16px;';
+  div.innerHTML = `
+    <div style="font-size:48px;">🔒</div>
+    <div style="font-family:Space Grotesk,sans-serif;font-size:24px;font-weight:700;">Access Denied</div>
+    <div style="font-size:14px;color:var(--t2);text-align:center;max-width:360px;">${reason}</div>
+    <div style="font-size:13px;color:var(--t3);">Contact gauravsmokal07@gmail.com to request access.</div>
+    <button class="btn btn-primary" onclick="document.getElementById('access-denied-msg').remove();signOut();">Sign out</button>
+  `;
+  document.body.appendChild(div);
+}
+
+function checkSectionAccess(section) {
+  // Super admin always has access
+  if (!USER || USER.isSuperAdmin || USER.email === 'gauravsmokal07@gmail.com') return true;
+  if (!USER.allowedSections) return true;
+  return USER.allowedSections.includes(section);
+}
+
+function showSectionBlocked(section) {
+  const titles = {
+    dashboard:'Dashboard', pipeline:'Pipeline', topics:'Topic inbox',
+    scripts:'Scripts', shoots:'Shoot planner', rework:'Rework tracker',
+    analytics:'Analytics', ytchannels:'YT Channels', shorts:'Shorts & Reels',
+    reports:'Reports', admin:'Admin panel', settings:'Settings'
+  };
+  const mainContent = document.querySelector('.content');
+  if (mainContent) {
+    mainContent.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;gap:16px;">
+        <div style="font-size:48px;">🔒</div>
+        <div style="font-size:20px;font-weight:700;">${titles[section]||section}</div>
+        <div style="font-size:14px;color:var(--t2);">Your role (${USER.role||'Viewer'}) doesn't have access to this section.</div>
+        <div style="font-size:13px;color:var(--t3);">Contact your admin to request access.</div>
+      </div>`;
+  }
+}
+
+// ============================================================
+//  USER MANAGEMENT JS
+// ============================================================
+let usersCache = [];
+let rolesCache = [];
+
+async function loadUsersAndRoles() {
+  try {
+    const [users, roles] = await Promise.all([api('getUsers'), api('getRoles')]);
+    usersCache = users;
+    rolesCache = roles;
+    renderUsersList();
+    renderRolesList();
+    // Populate role dropdowns
+    const roleOpts = roles.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
+    ['user-role','edit-user-role'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.innerHTML = roleOpts + '<option value="Custom">Custom (set manually)</option>'; }
+    });
+  } catch(e) { toast('Users load error: ' + e.message, 'err'); }
+}
+
+function renderUsersList() {
+  const el = document.getElementById('users-list');
+  if (!el) return;
+  el.innerHTML = usersCache.length ? usersCache.map(u => `
+    <div class="settings-item" style="align-items:center;">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;">
+        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--pink));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">${(u.displayName||u.email).charAt(0).toUpperCase()}</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;">${u.displayName||'—'} ${u.email === 'gauravsmokal07@gmail.com' ? '<span class="badge badge-pink">Super Admin</span>' : ''}</div>
+          <div style="font-size:11px;color:var(--t3);">${u.email}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="badge" style="background:${getRoleColor(u.role)}22;color:${getRoleColor(u.role)};">${u.role||'Viewer'}</span>
+        <span class="badge ${u.status==='active'?'badge-green':'badge-red'}">${u.status||'active'}</span>
+        ${u.email !== 'gauravsmokal07@gmail.com' ? `
+        <button class="btn btn-sm" onclick="openEditUser('${u.id}','${u.email}','${u.displayName||''}','${u.role||''}','${u.sections||''}','${u.status||'active'}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="removeUser('${u.id}','${u.email}')">Remove</button>` : ''}
+      </div>
+    </div>`).join('')
+  : '<div style="color:var(--t3);font-size:12px;padding:10px 0;">No users added yet. Add your first user above.</div>';
+}
+
+function renderRolesList() {
+  const el = document.getElementById('roles-list');
+  if (!el) return;
+  el.innerHTML = rolesCache.length ? rolesCache.map(r => `
+    <div class="settings-item">
+      <div style="display:flex;align-items:center;gap:10px;flex:1;">
+        <div style="width:10px;height:10px;border-radius:50%;background:${r.color};flex-shrink:0;"></div>
+        <div>
+          <div style="font-weight:600;font-size:13px;">${r.name}</div>
+          <div style="font-size:11px;color:var(--t3);">${(r.sections||'').split(',').length} sections</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;flex:2;">
+        ${(r.sections||'').split(',').map(s => `<span class="badge badge-blue" style="font-size:9px;">${s}</span>`).join('')}
+      </div>
+      ${r.name !== 'Super Admin' ? `<button class="btn btn-sm btn-danger" onclick="removeRole('${r.id}','${r.name}')">Delete</button>` : ''}
+    </div>`).join('')
+  : '<div style="color:var(--t3);font-size:12px;">No roles yet.</div>';
+}
+
+function getRoleColor(roleName) {
+  const r = rolesCache.find(x => x.name === roleName);
+  return r ? r.color : '#6366f1';
+}
+
+function onUserRoleChange(val) {
+  const preview = document.getElementById('user-role-sections-preview');
+  const custom = document.getElementById('user-custom-sections');
+  if (val === 'Custom') {
+    custom.style.display = 'block';
+    if (preview) preview.textContent = '';
+  } else {
+    custom.style.display = 'none';
+    const role = rolesCache.find(r => r.name === val);
+    if (role && preview) preview.textContent = 'Access: ' + (role.sections||'').split(',').join(', ');
+  }
+}
+
+function onEditUserRoleChange(val) {
+  const preview = document.getElementById('edit-user-sections-preview');
+  const custom = document.getElementById('edit-user-custom-sections');
+  if (val === 'Custom') {
+    custom.style.display = 'block';
+    if (preview) preview.textContent = '';
+  } else {
+    custom.style.display = 'none';
+    const role = rolesCache.find(r => r.name === val);
+    if (role && preview) preview.textContent = 'Access: ' + (role.sections||'').split(',').join(', ');
+  }
+}
+
+async function submitAddUser() {
+  const email = document.getElementById('user-email').value.trim();
+  const name = document.getElementById('user-name').value.trim();
+  const role = document.getElementById('user-role').value;
+  if (!email) { toast('Enter email address', 'err'); return; }
+  let sections = '';
+  if (role === 'Custom') {
+    const checked = [...document.querySelectorAll('input[name="user-section"]:checked')];
+    sections = checked.map(c => c.value).join(',');
+    if (!sections) { toast('Select at least one section', 'err'); return; }
+  } else {
+    const r = rolesCache.find(x => x.name === role);
+    sections = r ? r.sections : 'dashboard';
+  }
+  try {
+    await apiPost('addUser', { email, displayName: name, role, sections });
+    closeModal('addUser');
+    toast('User added ✓', 'ok');
+    document.getElementById('user-email').value = '';
+    document.getElementById('user-name').value = '';
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function openEditUser(id, email, name, role, sections, status) {
+  document.getElementById('edit-user-id').value = id;
+  document.getElementById('edit-user-email-val').value = email;
+  document.getElementById('edit-user-email-display').textContent = email;
+  document.getElementById('edit-user-name').value = name;
+  document.getElementById('edit-user-role').value = role;
+  document.getElementById('edit-user-status').value = status;
+  onEditUserRoleChange(role);
+  if (role === 'Custom' && sections) {
+    sections.split(',').forEach(s => {
+      const cb = document.querySelector(`input[name="edit-user-section"][value="${s}"]`);
+      if (cb) cb.checked = true;
+    });
+  }
+  openModal('editUser');
+}
+
+async function submitEditUser() {
+  const id = document.getElementById('edit-user-id').value;
+  const email = document.getElementById('edit-user-email-val').value;
+  const role = document.getElementById('edit-user-role').value;
+  let sections = '';
+  if (role === 'Custom') {
+    const checked = [...document.querySelectorAll('input[name="edit-user-section"]:checked')];
+    sections = checked.map(c => c.value).join(',');
+  } else {
+    const r = rolesCache.find(x => x.name === role);
+    sections = r ? r.sections : 'dashboard';
+  }
+  try {
+    await apiPost('updateUser', {
+      id, email,
+      displayName: document.getElementById('edit-user-name').value,
+      role, sections,
+      status: document.getElementById('edit-user-status').value
+    });
+    closeModal('editUser');
+    toast('User updated ✓', 'ok');
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function removeUser(id, email) {
+  if (!confirm(`Remove ${email} from Goofify?`)) return;
+  try {
+    await apiPost('deleteUser', { id, email });
+    toast('User removed', 'ok');
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function submitAddRole() {
+  const name = document.getElementById('role-name').value.trim();
+  if (!name) { toast('Enter role name', 'err'); return; }
+  const checked = [...document.querySelectorAll('input[name="role-section"]:checked')];
+  const sections = checked.map(c => c.value).join(',');
+  if (!sections) { toast('Select at least one section', 'err'); return; }
+  try {
+    await apiPost('addRole', {
+      name, sections,
+      color: document.getElementById('role-color').value
+    });
+    closeModal('addRole');
+    toast('Role created ✓', 'ok');
+    document.getElementById('role-name').value = '';
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function removeRole(id, name) {
+  if (!confirm(`Delete role "${name}"?`)) return;
+  try {
+    await apiPost('deleteRole', { id, name });
+    toast('Role deleted', 'ok');
+    loadUsersAndRoles();
+  } catch(e) { toast(e.message, 'err'); }
+}
 
 // ============================================================
 //  MOBILE SIDEBAR
