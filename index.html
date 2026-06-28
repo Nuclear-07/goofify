@@ -47,7 +47,9 @@ html,body{height:100%;}
 body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);background-image:var(--bg-grad);background-attachment:fixed;color:var(--t1);font-size:13px;overflow:hidden;-webkit-font-smoothing:antialiased;}
 /* LAYOUT */
 .app{display:flex;height:100vh;overflow:hidden;}
-.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:1px solid var(--gb);display:flex;flex-direction:column;z-index:10;}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:1px solid var(--gb);display:flex;flex-direction:column;z-index:10;position:fixed;left:-100%;top:0;bottom:0;transition:left 0.3s cubic-bezier(0.25,0.46,0.45,0.94);box-shadow:4px 0 32px rgba(0,0,0,0.3);}
+.sidebar.open{left:0;}
+.main{margin-left:0;flex:1;}
 .logo-wrap{padding:16px 14px 12px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--gb);}
 .logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--acc),var(--pink));border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:#fff;box-shadow:0 4px 16px var(--acc-g);}
 .logo-name{font-size:16px;font-weight:700;letter-spacing:-0.3px;color:var(--t1);}
@@ -268,7 +270,7 @@ select option{background:#1a1a2e;color:#fff;}
 .kbd{font-size:9px;background:var(--gs);border:1px solid var(--gb);padding:1px 5px;border-radius:4px;color:var(--t3);}
 
 @media (max-width:768px) {
-  .hamburger { display:flex !important; }
+  /* hamburger always visible */
   .sidebar { position:fixed;left:-100%;top:0;bottom:0;z-index:10;transition:left 0.3s ease;box-shadow:4px 0 32px rgba(0,0,0,0.4); }
   .sidebar.open { left:0; }
   .g2,.g3,.g4 { grid-template-columns:1fr !important; }
@@ -308,7 +310,7 @@ select option{background:#1a1a2e;color:#fff;}
 
   <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="logo-wrap">
+    <div class="logo-wrap" onclick="nav('dashboard');closeSidebar();" style="cursor:pointer;" title="Go to Dashboard">
       <div class="logo-icon">G</div>
       <span class="logo-name">Goofify</span>
       <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme"><span id="theme-icon">☀️</span></button>
@@ -2858,8 +2860,25 @@ async function submitAfterSnapshot() {
 function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('open');
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    document.getElementById('hamburger-btn').textContent = '☰';
+  } else {
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    document.getElementById('hamburger-btn').textContent = '✕';
+  }
+}
+
+function closeSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.remove('open');
+  overlay.classList.remove('open');
+  const btn = document.getElementById('hamburger-btn');
+  if (btn) btn.textContent = '☰';
 }
 
 function closeSidebar() {
