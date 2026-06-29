@@ -2524,7 +2524,11 @@ async function loadAdmin() {
 // ============================================================
 //  SETTINGS
 // ============================================================
-function loadSettings(){document.getElementById('api-url-input').value=API;document.getElementById('client-id-input').value=localStorage.getItem(CLIENT_KEY)||'';}
+function loadSettings(){
+  // Always show baked values — never empty
+  document.getElementById('api-url-input').value = localStorage.getItem(API_KEY) || BAKED_API;
+  document.getElementById('client-id-input').value = localStorage.getItem(CLIENT_KEY) || HARDCODED_CLIENT_ID;
+}
 
 // ============================================================
 //  MODAL HELPERS
@@ -3749,20 +3753,21 @@ function toast(msg,type='info'){const el=document.createElement('div');el.classN
 //  INIT
 // ============================================================
 window.addEventListener('load',()=>{
+  // Theme
   const t=localStorage.getItem('goofify_theme')||'dark';
   document.documentElement.setAttribute('data-theme',t);
   document.getElementById('theme-icon').textContent=t==='dark'?'☀️':'🌙';
-  API=localStorage.getItem(API_KEY)||BAKED_API;
+  // Always auto-save baked API URL and Client ID — no manual setup ever needed
+  API = localStorage.getItem(API_KEY) || BAKED_API;
   localStorage.setItem(API_KEY, API);
-  // Always persist the baked API URL
-  localStorage.setItem(API_KEY, API);
+  localStorage.setItem(CLIENT_KEY, localStorage.getItem(CLIENT_KEY) || HARDCODED_CLIENT_ID);
   // Check for guest token in URL
   const p=new URLSearchParams(window.location.search);
   const gt=p.get('guest');
   if(gt){document.getElementById('guest-token-input').value=gt;enterAsGuest();return;}
   initGoogleAuth();
-  // Check smart alerts every time app loads
-  setTimeout(() => { if(API) checkSmartAlerts(); }, 3000);
+  // Smart alerts 3 seconds after load
+  setTimeout(()=>{ if(API) checkSmartAlerts(); }, 3000);
   const saved=localStorage.getItem('goofify_user');
   if(saved){USER=JSON.parse(saved);enterApp();}
   updateNotifBadge();
