@@ -1691,40 +1691,39 @@ let CAL_TOKEN_EXPIRY = null;
 async function loadCalendarStatus() {
   const block = document.getElementById('cal-status-block');
   if (!block) return;
-  try {
-    const { data } = await sb.from('app_settings').select('*').eq('key', 'cal_access_token').single();
-    if (data && data.value) {
-      const expiry = await sb.from('app_settings').select('value').eq('key', 'cal_token_expiry').single();
-      const email = await sb.from('app_settings').select('value').eq('key', 'cal_email').single();
-      CAL_CONNECTED = true;
-      CAL_ACCESS_TOKEN = data.value;
-      block.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--green-g);border:1px solid var(--green);border-radius:var(--radius-sm);">
-          <div>
-            <div style="font-weight:600;font-size:13px;color:var(--green);">✅ Work calendar connected</div>
-            <div style="font-size:11px;color:var(--t2);margin-top:3px;">Connected as: ${email?.data?.value || 'Mindbowser account'}</div>
-            <div style="font-size:11px;color:var(--t3);margin-top:2px;">Real-time availability active in Shoot Planner</div>
-          </div>
-          <button class="btn btn-sm btn-danger" onclick="disconnectCalendar()">Disconnect</button>
-        </div>`;
-    } else {
-      CAL_CONNECTED = false;
-      block.innerHTML = `
-        <div style="padding:16px;background:var(--glass);border:1px solid var(--gb);border-radius:var(--radius-sm);">
-          <div style="font-weight:600;font-size:13px;margin-bottom:6px;">📅 Not connected</div>
-          <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your <strong>gaurav.mokal@mindbowser.com</strong> account to see real colleague availability in Shoot Planner.</div>
-          <div style="font-size:12px;color:var(--t3);margin-bottom:14px;">How it works: You log in with your MB account → Goofify reads colleague calendars → shows free slots automatically. Leaders do nothing.</div>
-          <button class="btn btn-primary" onclick="connectCalendar()">🔗 Connect Mindbowser calendar</button>
-        </div>`;
-    }
-  } catch(e) {
+
+  function showNotConnected() {
     CAL_CONNECTED = false;
     block.innerHTML = `
       <div style="padding:16px;background:var(--glass);border:1px solid var(--gb);border-radius:var(--radius-sm);">
         <div style="font-weight:600;font-size:13px;margin-bottom:6px;">📅 Not connected</div>
         <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your <strong>gaurav.mokal@mindbowser.com</strong> account to see real colleague availability in Shoot Planner.</div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:14px;">How it works: You log in with your MB account once → Goofify reads colleague calendars automatically → Leaders do nothing.</div>
         <button class="btn btn-primary" onclick="connectCalendar()">🔗 Connect Mindbowser calendar</button>
       </div>`;
+  }
+
+  try {
+    // Use maybeSingle() instead of single() — returns null instead of error when no row found
+    const { data, error } = await sb.from('app_settings').select('*').eq('key', 'cal_access_token').maybeSingle();
+    if (error) { showNotConnected(); return; }
+    if (!data || !data.value) { showNotConnected(); return; }
+
+    // Token exists — get email
+    const { data: emailData } = await sb.from('app_settings').select('value').eq('key', 'cal_email').maybeSingle();
+    CAL_CONNECTED = true;
+    CAL_ACCESS_TOKEN = data.value;
+    block.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--green-g);border:1px solid var(--green);border-radius:var(--radius-sm);">
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--green);">✅ Work calendar connected</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:3px;">Connected as: ${emailData?.value || 'Mindbowser account'}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px;">Real-time availability active in Shoot Planner</div>
+        </div>
+        <button class="btn btn-sm btn-danger" onclick="disconnectCalendar()">Disconnect</button>
+      </div>`;
+  } catch(e) {
+    showNotConnected();
   }
 }
 
@@ -1813,8 +1812,8 @@ async function disconnectCalendar() {
 // Get fresh access token (auto refresh if expired)
 async function getCalToken() {
   try {
-    const { data: tokenData } = await sb.from('app_settings').select('value').eq('key', 'cal_access_token').single();
-    const { data: expiryData } = await sb.from('app_settings').select('value').eq('key', 'cal_token_expiry').single();
+    const { data: tokenData } = await sb.from('app_settings').select('value').eq('key', 'cal_access_token').maybeSingle();
+    const { data: expiryData } = await sb.from('app_settings').select('value').eq('key', 'cal_token_expiry').maybeSingle();
     if (!tokenData?.value) return null;
     // Check if expired (with 5 min buffer)
     const expiry = new Date(expiryData?.value || 0);
@@ -1822,7 +1821,7 @@ async function getCalToken() {
       return tokenData.value; // Still valid
     }
     // Refresh token
-    const { data: refreshData } = await sb.from('app_settings').select('value').eq('key', 'cal_refresh_token').single();
+    const { data: refreshData } = await sb.from('app_settings').select('value').eq('key', 'cal_refresh_token').maybeSingle();
     if (!refreshData?.value) return null;
     const res = await fetch(DRIVE_API, {
       method: 'POST',
