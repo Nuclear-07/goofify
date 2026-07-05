@@ -1292,16 +1292,6 @@ async function loadTopics(){
 // ============================================================
 //  SHOOTS
 // ============================================================
-async function loadShoots(){
-  try{
-    const[leaders,shoots]=await Promise.all([dbGet('leaders'),dbGet('shoots')]);
-    cache.leaders=leaders;cache.shoots=shoots;
-    document.getElementById('leaders-grid').innerHTML=leaders.map(l=>`<div class="leader-card"><div style="display:flex;align-items:center;gap:12px;"><div class="leader-av">${l.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div><div style="flex:1;"><div style="font-weight:600;font-size:13px;">${l.name}</div><div style="font-size:11px;color:var(--t2);">${l.role||''}</div><div style="font-size:11px;color:var(--t3);">${l.free_slots||'No slots set'}</div></div>${availBadge(l.availability)}</div></div>`).join('');
-    document.getElementById('shoots-list').innerHTML=shoots.length?[...shoots].sort((a,b)=>b.shoot_date>a.shoot_date?1:-1).map(s=>`<div class="card-inner"><div style="display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:500;font-size:13px;">${s.title}</div><span class="badge ${s.status==='Done'?'badge-green':'badge-blue'}">${s.status}</span></div><div style="font-size:11px;color:var(--t3);margin-top:5px;">📅 ${s.shoot_date||'—'} ${s.slot||''} · ${s.leader}</div>${canDo('write')?`<div style="margin-top:8px;display:flex;gap:6px;"><button class="btn btn-sm" onclick="markShootDone('${s.id}','${s.status}')">${s.status==='Done'?'Reopen':'Mark done'}</button><button class="btn btn-sm btn-danger" onclick="deleteShoot('${s.id}')">Delete</button></div>`:''}</div>`).join(''):'<div class="empty"><p>No shoots scheduled</p></div>';
-    const picker=document.getElementById('shoot-topics-picker');
-    if(picker){const leaderTopics=(cache.topics.length?cache.topics:await dbGet('topics')).filter(t=>needsLeader(t.content_type)&&t.pipeline_stage!=='Published');picker.innerHTML=leaderTopics.length?leaderTopics.map(t=>`<label style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;cursor:pointer;border-bottom:1px solid var(--gb);"><input type="checkbox" value="${t.id}" style="width:auto;"> ${t.title} <span style="color:var(--t3);font-size:11px;">· ${t.cluster}</span></label>`).join(''):'<div style="color:var(--t3);font-size:12px;padding:8px;">No eligible topics</div>';}
-  }catch(e){toast('Shoots: '+e.message,'err');}
-}
 async function markShootDone(id,current){try{await dbUpdate('shoots',id,{status:current==='Done'?'Scheduled':'Done'});toast('Updated ✓','ok');loadShoots();}catch(e){toast(e.message,'err');}}
 async function deleteShoot(id){if(!confirm('Delete shoot?'))return;try{await dbDelete('shoots',id);toast('Deleted','ok');loadShoots();}catch(e){toast(e.message,'err');}}
 
@@ -1555,7 +1545,7 @@ async function loadAdmin(){
     document.getElementById('activity-log').innerHTML=[...activity].reverse().slice(0,30).map(a=>`<div style="display:flex;gap:10px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--gb);"><span style="color:var(--t3);white-space:nowrap;font-family:monospace;">${a.date||''}</span><span style="color:var(--acc-l);font-weight:500;">${a.action}</span><span style="color:var(--t2);">${a.details||''}</span></div>`).join('')||'<div class="empty"><small>No activity yet</small></div>';
   }catch(e){toast('Admin: '+e.message,'err');}
 }
-function loadSettings(){document.getElementById('settings-email').textContent=USER?.email||'—';document.getElementById('settings-role').innerHTML=roleBadge(USER_ROLE);}
+// loadSettings defined below with calendar integration
 
 // ============================================================
 //  SUBMIT HANDLERS
@@ -1581,12 +1571,6 @@ async function submitEditTopic(){
 
 async function deleteTopic(id){if(!confirm('Delete topic?'))return;try{await dbDelete('topics',id);toast('Deleted','ok');loadTopics();}catch(e){toast(e.message,'err');}}
 
-async function submitShoot(){
-  const checkedTopics=[...document.querySelectorAll('#shoot-topics-picker input:checked')].map(cb=>cb.value);
-  try{await dbInsert('shoots',{title:'Shoot — '+document.getElementById('s-leader').value,leader:document.getElementById('s-leader').value,shoot_date:document.getElementById('s-date').value,slot:document.getElementById('s-slot').value,topic_ids:checkedTopics.join(','),status:'Scheduled'});
-  for(const tid of checkedTopics)await dbUpdate('topics',tid,{pipeline_stage:'Shoot Scheduled',updated_at:new Date().toISOString()});
-  closeModal('addShoot');toast('Scheduled ✓','ok');loadShoots();}catch(e){toast(e.message,'err');}
-}
 
 async function submitRework(){try{await dbInsert('rework_queue',{video_title:document.getElementById('rw-title').value,platform:document.getElementById('rw-platform').value,views_at_rework:document.getElementById('rw-views').value||0,ctr_at_rework:document.getElementById('rw-ctr').value||0,avg_watch_time:document.getElementById('rw-wt').value,scheduled_rework_day:document.getElementById('rw-day').value,yt_link:document.getElementById('rw-link').value,status:'Queued'});closeModal('addRework');toast('Added ✓','ok');loadRework();}catch(e){toast(e.message,'err');}}
 async function submitAnalytics(){try{await dbInsert('yt_analytics',{video_title:document.getElementById('an-title').value,platform:document.getElementById('an-platform').value,views:document.getElementById('an-views').value||0,watch_time_hrs:document.getElementById('an-wt').value||0,ctr:document.getElementById('an-ctr').value||0,subscribers_gained:document.getElementById('an-subs').value||0,date:document.getElementById('an-date').value});closeModal('addAnalytics');toast('Stats logged ✓','ok');loadAnalytics();}catch(e){toast(e.message,'err');}}
@@ -1965,16 +1949,14 @@ async function loadLeaderCalendarAvailability(leaders, selectedDate) {
 }
 
 // Override loadSettings to include calendar
-const _origLoadSettings = loadSettings;
 function loadSettings() {
-  _origLoadSettings();
+  document.getElementById('settings-email').textContent = USER?.email || '—';
+  document.getElementById('settings-role').innerHTML = roleBadge(USER_ROLE);
   loadCalendarStatus();
 }
 
 // Override loadShoots to show calendar availability
-const _origLoadShoots = loadShoots;
 async function loadShoots() {
-  await _origLoadShoots();
   // Add IDs to leader cards for calendar updates
   const leaders = cache.leaders || [];
   // Add date picker for availability check
