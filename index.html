@@ -351,6 +351,10 @@ select option{background:#1a1a2e;color:#fff;}
         Admin panel
       </div>
     </div>
+    <div class="nav-item" id="nav-notes" onclick="nav('notes')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      Notes & Ideas
+    </div>
     <div class="nav-gl">Account</div>
     <div class="nav-item" id="nav-settings" onclick="nav('settings')">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="1.5"/><path stroke-width="1.5" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -685,6 +689,21 @@ select option{background:#1a1a2e;color:#fff;}
         <div class="card"><div class="sec-head">Activity log</div><div id="activity-log"></div></div>
       </div>
 
+      <!-- NOTES -->
+      <div class="view" id="view-notes">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <div style="font-size:13px;color:var(--t2);">Your personal scratchpad — ideas, tasks, reminders. Only you can see this.</div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('addNote')">+ Add note</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <button class="btn btn-sm" id="note-filter-all" onclick="filterNotes('all')" style="border-color:var(--acc);color:var(--acc-l);">All</button>
+          <button class="btn btn-sm" id="note-filter-idea" onclick="filterNotes('idea')">💡 Ideas</button>
+          <button class="btn btn-sm" id="note-filter-task" onclick="filterNotes('task')">✅ Tasks</button>
+          <button class="btn btn-sm" id="note-filter-reminder" onclick="filterNotes('reminder')">🔔 Reminders</button>
+        </div>
+        <div id="notes-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;"></div>
+      </div>
+
       <!-- SETTINGS -->
       <div class="view" id="view-settings">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -695,7 +714,7 @@ select option{background:#1a1a2e;color:#fff;}
             <div class="settings-item"><span>Database</span><span class="badge badge-green">Supabase ✓</span></div>
             <div style="margin-top:12px;"><button class="btn btn-danger btn-sm" onclick="signOut()">Sign out</button></div>
           </div>
-          <div class="card">
+          <div class="card" id="about-card" style="display:none;">
             <div class="sec-head">About</div>
             <div style="font-size:12px;color:var(--t2);line-height:2;">
               <p>Goofify v4.0 — Supabase Edition</p>
@@ -704,9 +723,9 @@ select option{background:#1a1a2e;color:#fff;}
               <p style="color:var(--green);">✓ No Apps Script · No Google Sheets · No localStorage</p>
             </div>
           </div>
-          <div class="card" style="grid-column:1/-1;">
+          <div class="card" id="cal-card" style="grid-column:1/-1;display:none;">
             <div class="sec-head">📅 Work Calendar Integration</div>
-            <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your Mindbowser Google account to automatically read colleague availability and create shoot events on their calendars.</div>
+            <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your work Google account to automatically read colleague availability and create shoot events on their calendars.</div>
             <div id="cal-status-block">
               <div class="loader"><div class="spin"></div> Checking calendar status…</div>
             </div>
@@ -968,6 +987,96 @@ select option{background:#1a1a2e;color:#fff;}
 <!-- Delete Script -->
 <div class="overlay" id="modal-deleteScript"><div class="modal" style="max-width:400px;"><div class="modal-head"><div class="modal-title">Delete script permanently</div><button class="modal-close" onclick="closeModal('deleteScript')">✕</button></div><input type="hidden" id="del-script-id"><input type="hidden" id="del-file-id"><input type="hidden" id="del-topic-id"><div style="background:var(--red-g);border:1px solid var(--red);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;"><div style="font-weight:600;font-size:13px;color:var(--red);margin-bottom:4px;">⚠️ This cannot be undone</div><div style="font-size:12px;color:var(--t2);">This will permanently delete <strong id="del-file-display"></strong> from Goofify and Google Drive.</div></div><div class="modal-foot"><button class="btn" onclick="closeModal('deleteScript')">Cancel</button><button class="btn btn-danger" onclick="confirmDeleteScript()">Yes, delete permanently</button></div></div></div>
 
+<!-- Add Note -->
+<div class="overlay" id="modal-addNote">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Add note</div><button class="modal-close" onclick="closeModal('addNote')">✕</button></div>
+    <div class="form-group"><div class="form-label">Type</div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <button class="btn btn-sm" id="nt-idea" onclick="selectNoteType('idea')" style="border-color:var(--amber);color:var(--amber);">💡 Idea</button>
+        <button class="btn btn-sm" id="nt-task" onclick="selectNoteType('task')">✅ Task</button>
+        <button class="btn btn-sm" id="nt-reminder" onclick="selectNoteType('reminder')">🔔 Reminder</button>
+      </div>
+      <input type="hidden" id="note-type" value="idea">
+    </div>
+    <div class="form-group"><div class="form-label">Title</div><input id="note-title" placeholder="What's on your mind?"></div>
+    <div class="form-group"><div class="form-label">Content</div><textarea id="note-content" rows="4" placeholder="Details, links, anything…"></textarea></div>
+    <div class="form-group"><div class="form-label">Color</div>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        <div onclick="selectNoteColor('#6366f1')" style="width:24px;height:24px;border-radius:50%;background:#6366f1;cursor:pointer;border:2px solid transparent;" id="nc-1"></div>
+        <div onclick="selectNoteColor('#22d3ee')" style="width:24px;height:24px;border-radius:50%;background:#22d3ee;cursor:pointer;border:2px solid transparent;" id="nc-2"></div>
+        <div onclick="selectNoteColor('#34d399')" style="width:24px;height:24px;border-radius:50%;background:#34d399;cursor:pointer;border:2px solid transparent;" id="nc-3"></div>
+        <div onclick="selectNoteColor('#fbbf24')" style="width:24px;height:24px;border-radius:50%;background:#fbbf24;cursor:pointer;border:2px solid transparent;" id="nc-4"></div>
+        <div onclick="selectNoteColor('#f472b6')" style="width:24px;height:24px;border-radius:50%;background:#f472b6;cursor:pointer;border:2px solid transparent;" id="nc-5"></div>
+        <div onclick="selectNoteColor('#f87171')" style="width:24px;height:24px;border-radius:50%;background:#f87171;cursor:pointer;border:2px solid transparent;" id="nc-6"></div>
+      </div>
+      <input type="hidden" id="note-color" value="#6366f1">
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('addNote')">Cancel</button><button class="btn btn-primary" onclick="submitNote()">Add note</button></div>
+  </div>
+</div>
+
+<!-- Edit Cluster -->
+<div class="overlay" id="modal-editCluster">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Edit cluster</div><button class="modal-close" onclick="closeModal('editCluster')">✕</button></div>
+    <input type="hidden" id="ecl-id">
+    <div class="form-group"><div class="form-label">Cluster name</div><input id="ecl-name"></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Color</div><input type="color" id="ecl-color" style="height:40px;padding:4px;"></div>
+      <div class="form-group"><div class="form-label">Description</div><input id="ecl-desc"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('editCluster')">Cancel</button><button class="btn btn-primary" onclick="submitEditCluster()">Save</button></div>
+  </div>
+</div>
+
+<!-- Edit Stage -->
+<div class="overlay" id="modal-editStage">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Edit stage</div><button class="modal-close" onclick="closeModal('editStage')">✕</button></div>
+    <input type="hidden" id="est-id">
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Stage name</div><input id="est-name"></div>
+      <div class="form-group"><div class="form-label">Icon (emoji)</div><input id="est-icon"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Color</div><input type="color" id="est-color" style="height:40px;padding:4px;"></div>
+      <div class="form-group"><div class="form-label">Order</div><input type="number" id="est-order"></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('editStage')">Cancel</button><button class="btn btn-primary" onclick="submitEditStage()">Save</button></div>
+  </div>
+</div>
+
+<!-- Edit SEO -->
+<div class="overlay" id="modal-editSeo">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Edit SEO member</div><button class="modal-close" onclick="closeModal('editSeo')">✕</button></div>
+    <input type="hidden" id="eseo-id">
+    <div class="form-group"><div class="form-label">Name</div><input id="eseo-name"></div>
+    <div class="form-group"><div class="form-label">Cluster</div><select id="eseo-cluster"></select></div>
+    <div class="form-group"><div class="form-label">Email</div><input type="email" id="eseo-email"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('editSeo')">Cancel</button><button class="btn btn-primary" onclick="submitEditSeo()">Save</button></div>
+  </div>
+</div>
+
+<!-- Edit Leader -->
+<div class="overlay" id="modal-editLeader">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Edit leader</div><button class="modal-close" onclick="closeModal('editLeader')">✕</button></div>
+    <input type="hidden" id="el-id">
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Name</div><input id="el-name"></div>
+      <div class="form-group"><div class="form-label">Role / Title</div><input id="el-role"></div>
+    </div>
+    <div class="form-group"><div class="form-label">Availability</div>
+      <select id="el-avail"><option>Available</option><option>Limited</option><option>Flexible</option><option>Unavailable</option></select>
+    </div>
+    <div class="form-group"><div class="form-label">Free slots</div><input id="el-slots" placeholder="Tue 10am–1pm, Thu 2pm"></div>
+    <div class="form-group"><div class="form-label">Email</div><input type="email" id="el-email"></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('editLeader')">Cancel</button><button class="btn btn-primary" onclick="submitEditLeader()">Save</button></div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toasts"></div>
 
 <script>
@@ -1161,7 +1270,7 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){
 // ============================================================
 //  NAVIGATION
 // ============================================================
-const VIEW_TITLES={dashboard:'Dashboard',pipeline:'Content pipeline',topics:'Topic inbox',shoots:'Shoot planner',scripts:'Scripts & uploads',drive:'Drive tree',rework:'Rework tracker',analytics:'Analytics — YT & LinkedIn',ytchannels:'YouTube Channels & Before/After',shorts:'Shorts & Reels',reports:'Reports',users:'Users & Roles',admin:'Admin panel',settings:'Settings'};
+const VIEW_TITLES={dashboard:'Dashboard',pipeline:'Content pipeline',topics:'Topic inbox',shoots:'Shoot planner',scripts:'Scripts & uploads',drive:'Drive tree',rework:'Rework tracker',analytics:'Analytics — YT & LinkedIn',ytchannels:'YouTube Channels & Before/After',shorts:'Shorts & Reels',reports:'Reports',users:'Users & Roles',admin:'Admin panel',settings:'Settings',notes:'Notes & Ideas'};
 function nav(name){
   if(!canAccess(name)&&name!=='settings'&&name!=='admin'&&name!=='users'){toast('No access to this section','info');return;}
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
@@ -1186,6 +1295,7 @@ function loadView(n){
   else if(n==='users')loadUsers();
   else if(n==='admin')loadAdmin();
   else if(n==='settings')loadSettings();
+  else if(n==='notes')loadNotes();
 }
 
 // ============================================================
@@ -1536,16 +1646,27 @@ async function loadAdmin(){
   try{
     const[clusters,stages,seo,leaders,guests,activity]=await Promise.all([dbGet('clusters'),dbGet('pipeline_stages'),dbGet('seo_team'),dbGet('leaders'),dbGet('guest_tokens'),dbGet('activity_log')]);
     cache.clusters=clusters;cache.stages=stages;cache.seoTeam=seo;cache.leaders=leaders;cache.guests=guests;populateDropdowns();
-    document.getElementById('clusters-list').innerHTML=clusters.map(c=>`<div class="settings-item"><span style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:${c.color};display:inline-block;"></span>${c.name} <span style="font-size:11px;color:var(--t3);">${c.description||''}</span></span><button class="btn btn-sm btn-danger" onclick="deleteCluster('${c.id}')">Delete</button></div>`).join('')||'<div style="color:var(--t3);font-size:12px;">No clusters</div>';
-    document.getElementById('content-types-list').innerHTML=cache.contentTypes.map(c=>`<div class="settings-item"><span style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:${c.color};display:inline-block;"></span>${c.icon||''} ${c.name} <span style="font-size:11px;color:var(--t3);">${c.requires_leader?'needs leader':'no leader'}</span></span><button class="btn btn-sm btn-danger" onclick="deleteContentType('${c.id}')">Delete</button></div>`).join('')||'<div style="color:var(--t3);font-size:12px;">No content types</div>';
-    document.getElementById('stages-list').innerHTML=[...stages].sort((a,b)=>Number(a.order)-Number(b.order)).map(s=>`<div class="settings-item"><span>${s.icon||''} ${s.name} <span style="font-size:10px;color:var(--t3);">order:${s.order}</span></span><button class="btn btn-sm btn-danger" onclick="deleteStage('${s.id}')">Delete</button></div>`).join('');
-    document.getElementById('seo-list').innerHTML=seo.map(s=>`<div class="settings-item"><span>${s.name}<span style="font-size:11px;color:var(--t3);"> · ${s.cluster}</span></span><button class="btn btn-sm btn-danger" onclick="deleteSeo('${s.id}')">Delete</button></div>`).join('');
-    document.getElementById('leaders-list').innerHTML=leaders.map(l=>`<div class="settings-item"><div><div style="font-weight:500;font-size:13px;">${l.name}<span style="font-size:11px;color:var(--t3);"> · ${l.role||''}</span></div><div style="font-size:11px;color:var(--t3);">${availBadge(l.availability)} ${l.free_slots||''}</div></div><button class="btn btn-sm btn-danger" onclick="deleteLeader('${l.id}')">Delete</button></div>`).join('');
+    document.getElementById('clusters-list').innerHTML=clusters.map(c=>`<div class="settings-item" id="cl-item-${c.id}"><span style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:${c.color};display:inline-block;"></span>${c.name} <span style="font-size:11px;color:var(--t3);">${c.description||''}</span></span><div style="display:flex;gap:5px;"><button class="btn btn-sm" onclick="editCluster('${c.id}','${c.name}','${c.color}','${(c.description||'').replace(/'/g,'&apos;')}')">✎</button><button class="btn btn-sm btn-danger" onclick="deleteCluster('${c.id}')">✕</button></div></div>`).join('')||'<div style="color:var(--t3);font-size:12px;">No clusters</div>';
+    document.getElementById('content-types-list').innerHTML=cache.contentTypes.map(c=>`<div class="settings-item"><span style="display:flex;align-items:center;gap:8px;"><span style="width:10px;height:10px;border-radius:50%;background:${c.color};display:inline-block;"></span>${c.icon||''} ${c.name} <span style="font-size:11px;color:var(--t3);">${c.requires_leader?'needs leader':'no leader'}</span></span><div style="display:flex;gap:5px;"><button class="btn btn-sm btn-danger" onclick="deleteContentType('${c.id}')">✕</button></div></div>`).join('')||'<div style="color:var(--t3);font-size:12px;">No content types</div>';
+    // Stages with drag reorder
+    const stagesSorted=[...stages].sort((a,b)=>Number(a.order)-Number(b.order));
+    document.getElementById('stages-list').innerHTML=`<div id="stages-drag-list" style="display:flex;flex-direction:column;gap:4px;">${stagesSorted.map(s=>`<div class="settings-item" draggable="true" data-id="${s.id}" data-order="${s.order}" style="cursor:grab;background:var(--glass);border-radius:8px;padding:8px 10px;" ondragstart="dragStageStart(event)" ondragover="dragStageOver(event)" ondrop="dragStageDrop(event)"><span style="display:flex;align-items:center;gap:8px;"><span style="color:var(--t3);font-size:14px;">⠿</span>${s.icon||''} ${s.name}</span><div style="display:flex;gap:5px;"><button class="btn btn-sm" onclick="editStage('${s.id}','${s.name}','${s.icon||''}','${s.color}',${s.order})">✎</button><button class="btn btn-sm btn-danger" onclick="deleteStage('${s.id}')">✕</button></div></div>`).join('')}</div>`;
+    document.getElementById('seo-list').innerHTML=seo.map(s=>`<div class="settings-item"><span>${s.name}<span style="font-size:11px;color:var(--t3);"> · ${s.cluster}</span></span><div style="display:flex;gap:5px;"><button class="btn btn-sm" onclick="editSeo('${s.id}','${s.name}','${s.cluster}','${s.email||''}')">✎</button><button class="btn btn-sm btn-danger" onclick="deleteSeo('${s.id}')">✕</button></div></div>`).join('');
+    document.getElementById('leaders-list').innerHTML=leaders.map(l=>`<div class="settings-item"><div><div style="font-weight:500;font-size:13px;">${l.name}<span style="font-size:11px;color:var(--t3);"> · ${l.role||''}</span></div><div style="font-size:11px;color:var(--t3);">${availBadge(l.availability)} ${l.free_slots||''}</div></div><div style="display:flex;gap:5px;"><button class="btn btn-sm" onclick="editLeader('${l.id}','${(l.name||'').replace(/'/g,'&apos;')}','${(l.role||'').replace(/'/g,'&apos;')}','${l.availability||'Available'}','${(l.free_slots||'').replace(/'/g,'&apos;')}','${l.email||''}')">✎</button><button class="btn btn-sm btn-danger" onclick="deleteLeader('${l.id}')">✕</button></div></div>`).join('');
     document.getElementById('guests-list').innerHTML=guests.length?guests.map(g=>`<div class="settings-item"><div><div style="font-weight:500;font-size:13px;">${g.label} <span class="badge ${g.status==='active'?'badge-green':'badge-gray'}">${g.status}</span></div><div style="font-size:11px;color:var(--t3);">Expires: ${g.expiry_date?new Date(g.expiry_date).toLocaleDateString('en-IN'):'Never'} · ${g.sections}</div></div><div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="copyGuestLinkById('${g.token}')">Copy link</button>${g.status==='active'?`<button class="btn btn-sm btn-danger" onclick="revokeGuest('${g.id}')">Revoke</button>`:''}</div></div>`).join(''):'<div style="color:var(--t3);font-size:12px;">No guest tokens yet</div>';
     document.getElementById('activity-log').innerHTML=[...activity].reverse().slice(0,30).map(a=>`<div style="display:flex;gap:10px;font-size:12px;padding:5px 0;border-bottom:1px solid var(--gb);"><span style="color:var(--t3);white-space:nowrap;font-family:monospace;">${a.date||''}</span><span style="color:var(--acc-l);font-weight:500;">${a.action}</span><span style="color:var(--t2);">${a.details||''}</span></div>`).join('')||'<div class="empty"><small>No activity yet</small></div>';
   }catch(e){toast('Admin: '+e.message,'err');}
 }
 // loadSettings defined below with calendar integration
+function loadSettings() {
+  document.getElementById('settings-email').textContent = USER?.email || '—';
+  document.getElementById('settings-role').innerHTML = roleBadge(USER_ROLE);
+  // Show About and Calendar only to super admin
+  const isSuperAdmin = USER_ROLE === 'superadmin';
+  document.getElementById('about-card').style.display = isSuperAdmin ? 'block' : 'none';
+  document.getElementById('cal-card').style.display = isSuperAdmin ? 'block' : 'none';
+  if (isSuperAdmin) loadCalendarStatus();
+}
 
 // ============================================================
 //  SUBMIT HANDLERS
@@ -1664,8 +1785,208 @@ window.addEventListener('load',async()=>{
 });
 
 // ============================================================
-//  GOOGLE CALENDAR INTEGRATION
+//  NOTES & IDEAS (Supabase backed)
 // ============================================================
+let notesFilter = 'all', selectedNoteColor = '#6366f1', selectedNoteType = 'idea';
+
+const VIEW_TITLES_EXTRA = { notes: 'Notes & Ideas' };
+const _origViewTitles = VIEW_TITLES;
+Object.assign(VIEW_TITLES, VIEW_TITLES_EXTRA);
+
+async function loadNotes() {
+  try {
+    const data = await dbGet('notes');
+    renderNotes(data);
+  } catch(e) {
+    // Notes table might not exist yet
+    document.getElementById('notes-grid').innerHTML = `<div class="empty"><p>Notes not set up yet</p><small>Run the SQL below in Supabase to enable notes.</small></div>`;
+  }
+}
+
+function filterNotes(filter) {
+  notesFilter = filter;
+  ['all','idea','task','reminder'].forEach(f => {
+    const btn = document.getElementById('note-filter-'+f);
+    if(btn) { btn.style.borderColor = f===filter?'var(--acc)':''; btn.style.color = f===filter?'var(--acc-l)':''; }
+  });
+  dbGet('notes').then(data => {
+    const filtered = filter === 'all' ? data : data.filter(n => n.type === filter);
+    renderNotes(filtered);
+  }).catch(() => {});
+}
+
+function renderNotes(data) {
+  const grid = document.getElementById('notes-grid');
+  if (!grid) return;
+  if (!data.length) { grid.innerHTML = '<div class="empty"><p>No notes yet</p><small>Click + Add note to get started</small></div>'; return; }
+  grid.innerHTML = data.map(n => `
+    <div style="background:${n.color||'#6366f1'}18;border:1px solid ${n.color||'#6366f1'}44;border-radius:var(--radius);padding:16px;position:relative;transition:all var(--dur);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+        <span style="font-size:11px;background:${n.color||'#6366f1'}33;color:${n.color||'#6366f1'};padding:2px 8px;border-radius:10px;font-weight:600;">${n.type==='idea'?'💡 Idea':n.type==='task'?'✅ Task':'🔔 Reminder'}</span>
+        <div style="display:flex;gap:4px;">
+          ${n.type==='task'?`<button onclick="toggleNoteTask('${n.id}',${n.done})" style="background:none;border:none;cursor:pointer;font-size:16px;">${n.done?'☑️':'☐'}</button>`:''}
+          <button onclick="deleteNote('${n.id}')" style="background:none;border:none;cursor:pointer;color:var(--t3);font-size:14px;">✕</button>
+        </div>
+      </div>
+      <div style="font-weight:600;font-size:14px;margin-bottom:6px;${n.done?'text-decoration:line-through;color:var(--t3);':''}">${n.title}</div>
+      <div style="font-size:12px;color:var(--t2);line-height:1.6;white-space:pre-wrap;">${n.content||''}</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:10px;">${(n.created_at||'').split('T')[0]}</div>
+    </div>`).join('');
+}
+
+function selectNoteType(type) {
+  selectedNoteType = type;
+  ['idea','task','reminder'].forEach(t => {
+    const btn = document.getElementById('nt-'+t);
+    if(btn) { btn.style.borderColor = t===type?'var(--acc)':''; btn.style.color = t===type?'var(--acc-l)':''; }
+  });
+  document.getElementById('note-type').value = type;
+}
+
+function selectNoteColor(color) {
+  selectedNoteColor = color;
+  document.getElementById('note-color').value = color;
+  ['nc-1','nc-2','nc-3','nc-4','nc-5','nc-6'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.border = '2px solid transparent';
+  });
+  // Highlight selected
+  event.target.style.border = '2px solid white';
+}
+
+async function submitNote() {
+  const title = document.getElementById('note-title').value.trim();
+  if (!title) { toast('Enter a title', 'err'); return; }
+  try {
+    await dbInsert('notes', {
+      title,
+      content: document.getElementById('note-content').value.trim(),
+      type: document.getElementById('note-type').value || 'idea',
+      color: document.getElementById('note-color').value || '#6366f1',
+      done: false
+    });
+    closeModal('addNote');
+    document.getElementById('note-title').value = '';
+    document.getElementById('note-content').value = '';
+    toast('Note added ✓', 'ok');
+    loadNotes();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function deleteNote(id) {
+  try { await dbDelete('notes', id); toast('Deleted', 'ok'); loadNotes(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+async function toggleNoteTask(id, done) {
+  try { await dbUpdate('notes', id, { done: !done }); loadNotes(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+// ============================================================
+//  EDIT FUNCTIONS — Admin items
+// ============================================================
+function editCluster(id, name, color, desc) {
+  document.getElementById('ecl-id').value = id;
+  document.getElementById('ecl-name').value = name;
+  document.getElementById('ecl-color').value = color;
+  document.getElementById('ecl-desc').value = desc;
+  openModal('editCluster');
+}
+async function submitEditCluster() {
+  const id = document.getElementById('ecl-id').value;
+  try {
+    await dbUpdate('clusters', id, { name: document.getElementById('ecl-name').value, color: document.getElementById('ecl-color').value, description: document.getElementById('ecl-desc').value });
+    closeModal('editCluster'); toast('Updated ✓', 'ok'); loadAdmin(); loadAll();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function editStage(id, name, icon, color, order) {
+  document.getElementById('est-id').value = id;
+  document.getElementById('est-name').value = name;
+  document.getElementById('est-icon').value = icon;
+  document.getElementById('est-color').value = color;
+  document.getElementById('est-order').value = order;
+  openModal('editStage');
+}
+async function submitEditStage() {
+  const id = document.getElementById('est-id').value;
+  try {
+    await dbUpdate('pipeline_stages', id, { name: document.getElementById('est-name').value, icon: document.getElementById('est-icon').value, color: document.getElementById('est-color').value, order: document.getElementById('est-order').value });
+    closeModal('editStage'); toast('Updated ✓', 'ok'); loadAdmin(); loadAll();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function editSeo(id, name, cluster, email) {
+  document.getElementById('eseo-id').value = id;
+  document.getElementById('eseo-name').value = name;
+  // Populate cluster dropdown
+  const sel = document.getElementById('eseo-cluster');
+  sel.innerHTML = cache.clusters.map(c => `<option ${c.name===cluster?'selected':''}>${c.name}</option>`).join('');
+  document.getElementById('eseo-email').value = email;
+  openModal('editSeo');
+}
+async function submitEditSeo() {
+  const id = document.getElementById('eseo-id').value;
+  try {
+    await dbUpdate('seo_team', id, { name: document.getElementById('eseo-name').value, cluster: document.getElementById('eseo-cluster').value, email: document.getElementById('eseo-email').value });
+    closeModal('editSeo'); toast('Updated ✓', 'ok'); loadAdmin(); loadAll();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function editLeader(id, name, role, avail, slots, email) {
+  document.getElementById('el-id').value = id;
+  document.getElementById('el-name').value = name;
+  document.getElementById('el-role').value = role;
+  document.getElementById('el-avail').value = avail;
+  document.getElementById('el-slots').value = slots;
+  document.getElementById('el-email').value = email;
+  openModal('editLeader');
+}
+async function submitEditLeader() {
+  const id = document.getElementById('el-id').value;
+  try {
+    await dbUpdate('leaders', id, { name: document.getElementById('el-name').value, role: document.getElementById('el-role').value, availability: document.getElementById('el-avail').value, free_slots: document.getElementById('el-slots').value, email: document.getElementById('el-email').value });
+    closeModal('editLeader'); toast('Updated ✓', 'ok'); loadAdmin(); loadAll();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// ============================================================
+//  DRAG REORDER — Pipeline stages
+// ============================================================
+let dragSrcEl = null;
+function dragStageStart(e) {
+  dragSrcEl = e.currentTarget;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragSrcEl.dataset.id);
+  dragSrcEl.style.opacity = '0.4';
+}
+function dragStageOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  return false;
+}
+async function dragStageDrop(e) {
+  e.stopPropagation();
+  const target = e.currentTarget;
+  if (dragSrcEl && dragSrcEl !== target) {
+    // Swap orders
+    const srcId = dragSrcEl.dataset.id;
+    const tgtId = target.dataset.id;
+    const srcOrder = Number(dragSrcEl.dataset.order);
+    const tgtOrder = Number(target.dataset.order);
+    try {
+      await dbUpdate('pipeline_stages', srcId, { order: tgtOrder });
+      await dbUpdate('pipeline_stages', tgtId, { order: srcOrder });
+      toast('Stage order updated ✓', 'ok');
+      loadAdmin();
+      loadAll();
+    } catch(e) { toast(e.message, 'err'); }
+  }
+  if (dragSrcEl) dragSrcEl.style.opacity = '1';
+  return false;
+}
+document.addEventListener('dragend', () => { if (dragSrcEl) { dragSrcEl.style.opacity = '1'; dragSrcEl = null; } });
 
 let CAL_CONNECTED = false;
 let CAL_ACCESS_TOKEN = null;
@@ -1681,8 +2002,8 @@ async function loadCalendarStatus() {
     block.innerHTML = `
       <div style="padding:16px;background:var(--glass);border:1px solid var(--gb);border-radius:var(--radius-sm);">
         <div style="font-weight:600;font-size:13px;margin-bottom:6px;">📅 Not connected</div>
-        <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your <strong>gaurav.mokal@mindbowser.com</strong> account to see real colleague availability in Shoot Planner.</div>
-        <div style="font-size:12px;color:var(--t3);margin-bottom:14px;">How it works: You log in with your MB account once → Goofify reads colleague calendars automatically → Leaders do nothing.</div>
+        <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your <strong>work Google account</strong> to see real colleague availability in Shoot Planner.</div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:14px;">How it works: You log in with your work account once → Goofify reads colleague calendars automatically → Leaders do nothing.</div>
         <button class="btn btn-primary" onclick="connectCalendar()">🔗 Connect Mindbowser calendar</button>
       </div>`;
   }
@@ -1949,12 +2270,6 @@ async function loadLeaderCalendarAvailability(leaders, selectedDate) {
 }
 
 // Override loadSettings to include calendar
-function loadSettings() {
-  document.getElementById('settings-email').textContent = USER?.email || '—';
-  document.getElementById('settings-role').innerHTML = roleBadge(USER_ROLE);
-  loadCalendarStatus();
-}
-
 // Override loadShoots to show calendar availability
 async function loadShoots() {
   // Add IDs to leader cards for calendar updates
