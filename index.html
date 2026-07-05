@@ -1148,6 +1148,7 @@ async function checkUserAccess(email) {
 
 function canDo(action) {
   if (IS_GUEST) return false;
+  if (USER_ROLE === 'guest') return false;
   if (USER_ROLE === 'superadmin' || USER_ROLE === 'admin') return true;
   if (USER_ROLE === 'member' && (action === 'read' || action === 'write')) return true;
   return false;
@@ -1156,6 +1157,12 @@ function canDo(action) {
 function canAccess(section) {
   if (USER_ROLE === 'superadmin') return true;
   if (IS_GUEST) return GUEST_SECTIONS.includes(section);
+  if (USER_ROLE === 'guest') {
+    // Guest role users — only see sections assigned to them
+    if (USER_SECTIONS === 'all') return true;
+    if (Array.isArray(USER_SECTIONS)) return USER_SECTIONS.includes(section);
+    return false;
+  }
   if (USER_SECTIONS === 'all') return true;
   if (Array.isArray(USER_SECTIONS)) return USER_SECTIONS.includes(section);
   return false;
@@ -1183,6 +1190,13 @@ async function enterApp() {
   const showAdmin = USER_ROLE === 'superadmin' || USER_ROLE === 'admin';
   document.getElementById('admin-nav').style.display = showAdmin ? 'block' : 'none';
   document.getElementById('add-topic-btn').style.display = canDo('write') ? 'inline-flex' : 'none';
+  // Hide all + Add / Schedule buttons for guest/read-only users
+  document.querySelectorAll('.btn-primary').forEach(btn => {
+    const txt = btn.textContent.trim();
+    if ((txt.startsWith('+') || txt.includes('Schedule') || txt.includes('Log') || txt.includes('Generate') || txt.includes('Upload')) && !canDo('write')) {
+      btn.style.display = 'none';
+    }
+  });
   ['dashboard','pipeline','topics','shoots','scripts','drive','rework','analytics','ytchannels','shorts','reports'].forEach(v => {
     const el = document.getElementById('nav-' + v);
     if (el && !canAccess(v)) el.style.display = 'none';
@@ -1343,7 +1357,7 @@ function toggleLeaderField(){document.getElementById('ul-leader-group').style.di
 //  DASHBOARD
 // ============================================================
 async function loadDashboard(){
-  if(IS_GUEST)document.getElementById('guest-banner-dash').innerHTML='<div class="guest-banner">👁 Guest view — read only</div>';
+  if(IS_GUEST || USER_ROLE === 'guest')document.getElementById('guest-banner-dash').innerHTML='<div class="guest-banner">👁 Guest view — read only. You cannot add, edit or delete anything.</div>';
   else document.getElementById('guest-banner-dash').innerHTML='';
   try{
     const[topics,leaders,seo,rework,activity]=await Promise.all([dbGet('topics'),dbGet('leaders'),dbGet('seo_team'),dbGet('rework_queue'),dbGet('activity_log')]);
@@ -1785,8 +1799,41 @@ window.addEventListener('load',async()=>{
 });
 
 // ============================================================
-//  NOTES & IDEAS (Supabase backed)
+//  STRICT ROLE ENFORCEMENT
 // ============================================================
+function enforceWrite() {
+  if (!canDo('write')) { toast('You don\'t have permission to do this', 'err'); throw new Error('Permission denied'); }
+}
+function enforceDelete() {
+  if (!canDo('delete')) { toast('You don\'t have permission to delete', 'err'); throw new Error('Permission denied'); }
+}
+// Wrap all submit/delete functions with permission checks
+const _origSubmitTopic = submitTopic;
+async function submitTopic() { try { enforceWrite(); } catch(e) { return; } await _origSubmitTopic(); }
+const _origSubmitEditTopic = submitEditTopic;
+async function submitEditTopic() { try { enforceWrite(); } catch(e) { return; } await _origSubmitEditTopic(); }
+const _origDeleteTopic = deleteTopic;
+async function deleteTopic(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteTopic(id); }
+const _origSubmitRework = submitRework;
+async function submitRework() { try { enforceWrite(); } catch(e) { return; } await _origSubmitRework(); }
+const _origDeleteRework = deleteRework;
+async function deleteRework(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteRework(id); }
+const _origSubmitAnalytics = submitAnalytics;
+async function submitAnalytics() { try { enforceWrite(); } catch(e) { return; } await _origSubmitAnalytics(); }
+const _origDeleteAnalyticsRow = deleteAnalyticsRow;
+async function deleteAnalyticsRow(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteAnalyticsRow(id); }
+const _origSubmitShort = submitShort;
+async function submitShort() { try { enforceWrite(); } catch(e) { return; } await _origSubmitShort(); }
+const _origSubmitEditShort = submitEditShort;
+async function submitEditShort() { try { enforceWrite(); } catch(e) { return; } await _origSubmitEditShort(); }
+const _origDeleteShort = deleteShort;
+async function deleteShort(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteShort(id); }
+const _origSubmitYTChannel = submitYTChannel;
+async function submitYTChannel() { try { enforceWrite(); } catch(e) { return; } await _origSubmitYTChannel(); }
+const _origDeleteYTChannel = deleteYTChannel;
+async function deleteYTChannel(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteYTChannel(id); }
+const _origConfirmDeleteScript = confirmDeleteScript;
+async function confirmDeleteScript() { try { enforceDelete(); } catch(e) { return; } await _origConfirmDeleteScript(); }
 let notesFilter = 'all', selectedNoteColor = '#6366f1', selectedNoteType = 'idea';
 
 const VIEW_TITLES_EXTRA = { notes: 'Notes & Ideas' };
