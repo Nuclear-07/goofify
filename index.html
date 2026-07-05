@@ -447,16 +447,25 @@ select option{background:#1a1a2e;color:#fff;}
       <!-- SHOOTS -->
       <div class="view" id="view-shoots">
         <div style="background:var(--acc-gl);border:1px solid var(--acc-g);border-radius:var(--radius-sm);padding:8px 14px;margin-bottom:14px;font-size:12px;color:var(--acc-l);">ℹ️ Shoot planner is for <strong>Leader Videos</strong> only.</div>
+        <div id="cal-not-connected-banner" style="display:none;background:var(--amber-g);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber);display:flex;align-items:center;justify-content:space-between;">
+          <span>📅 Connect your work calendar in Settings to see real-time leader availability.</span>
+          <button class="btn btn-sm" style="border-color:var(--amber);color:var(--amber);" onclick="nav('settings')">Connect →</button>
+        </div>
         <div class="g2" style="margin-bottom:14px;">
           <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-              <div class="sec-head" style="margin:0;">Leader bandwidth</div>
-              <button class="btn btn-primary btn-sm" onclick="openModal('addShoot')">+ Schedule shoot</button>
+              <div class="sec-head" style="margin:0;">Leader availability</div>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span id="cal-mode-badge" style="font-size:10px;padding:2px 8px;border-radius:10px;background:var(--gs);color:var(--t3);">Manual mode</span>
+                <button class="btn btn-primary btn-sm" onclick="openModal('addShoot')">+ Schedule shoot</button>
+              </div>
             </div>
             <div id="leaders-grid" style="display:flex;flex-direction:column;gap:10px;"></div>
           </div>
           <div class="card"><div class="sec-head">Scheduled shoots</div><div id="shoots-list" style="display:flex;flex-direction:column;gap:8px;"></div></div>
         </div>
+        <!-- Calendar Free Slots Modal -->
+        <div style="display:none;" id="cal-slots-view"></div>
       </div>
 
       <!-- SCRIPTS -->
@@ -678,7 +687,7 @@ select option{background:#1a1a2e;color:#fff;}
 
       <!-- SETTINGS -->
       <div class="view" id="view-settings">
-        <div class="g2">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
           <div class="card">
             <div class="sec-head">Account</div>
             <div class="settings-item"><span>Signed in as</span><span id="settings-email" style="color:var(--acc-l);font-size:12px;">—</span></div>
@@ -694,6 +703,14 @@ select option{background:#1a1a2e;color:#fff;}
               <p>Stack: Cloudflare Pages + Supabase + Google Drive</p>
               <p style="color:var(--green);">✓ No Apps Script · No Google Sheets · No localStorage</p>
             </div>
+          </div>
+          <div class="card" style="grid-column:1/-1;">
+            <div class="sec-head">📅 Work Calendar Integration</div>
+            <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your Mindbowser Google account to automatically read colleague availability and create shoot events on their calendars.</div>
+            <div id="cal-status-block">
+              <div class="loader"><div class="spin"></div> Checking calendar status…</div>
+            </div>
+          </div>
           </div>
         </div>
       </div>
@@ -961,6 +978,9 @@ const SUPABASE_URL = 'https://txlyqddpzeflysqrfoed.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4bHlxZGRwemVmbHlzcXJmb2VkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMyMzY1NDksImV4cCI6MjA5ODgxMjU0OX0.axjyVbOoV5iDCoE0BdrR0XC4F1H2v-xoBbeO8YJ-l4w';
 const SUPER_ADMIN_EMAIL = 'gauravsmokal07@gmail.com';
 const DRIVE_API = 'https://script.google.com/macros/s/AKfycbwC42gyUhKM6l3KimNWifmzuqLpRTBjOxZSBaL39XV7M18QZGCwTOrgyCLbTrLPxQJJqQ/exec';
+const GCAL_CLIENT_ID = '370256532985-3k70295ov77f3n732li1t1fgmhk9bsbv.apps.googleusercontent.com';
+const GCAL_REDIRECT = 'https://goofify.pages.dev/calendar-callback';
+const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -1648,6 +1668,8 @@ window.addEventListener('load',async()=>{
   document.documentElement.setAttribute('data-theme',t);document.getElementById('theme-icon').textContent=t==='dark'?'☀️':'🌙';
   const p=new URLSearchParams(window.location.search),gt=p.get('guest');
   if(gt){document.getElementById('guest-token-input').value=gt;enterAsGuest();return;}
+  // Check for calendar OAuth callback
+  if(p.get('code') && p.get('scope')?.includes('calendar')) { await checkCalendarCallback(); }
   const{data:{session}}=await sb.auth.getSession();
   if(session){USER=session.user;await enterApp();}
   sb.auth.onAuthStateChange(async(event,session)=>{
@@ -1657,10 +1679,392 @@ window.addEventListener('load',async()=>{
   updateNotifBadge();
 });
 
-// Also need the users table in Supabase — create it via SQL Editor
-// CREATE TABLE IF NOT EXISTS users (id uuid primary key default uuid_generate_v4(), email text not null unique, name text default '', role text default 'member', sections text default 'all', created_at timestamptz default now());
-// ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-// CREATE POLICY "superadmin_all_users" ON users FOR ALL TO authenticated USING (true) WITH CHECK (true);
+// ============================================================
+//  GOOGLE CALENDAR INTEGRATION
+// ============================================================
+
+let CAL_CONNECTED = false;
+let CAL_ACCESS_TOKEN = null;
+let CAL_TOKEN_EXPIRY = null;
+
+// Check if calendar is connected on settings load
+async function loadCalendarStatus() {
+  const block = document.getElementById('cal-status-block');
+  if (!block) return;
+  try {
+    const { data } = await sb.from('app_settings').select('*').eq('key', 'cal_access_token').single();
+    if (data && data.value) {
+      const expiry = await sb.from('app_settings').select('value').eq('key', 'cal_token_expiry').single();
+      const email = await sb.from('app_settings').select('value').eq('key', 'cal_email').single();
+      CAL_CONNECTED = true;
+      CAL_ACCESS_TOKEN = data.value;
+      block.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:var(--green-g);border:1px solid var(--green);border-radius:var(--radius-sm);">
+          <div>
+            <div style="font-weight:600;font-size:13px;color:var(--green);">✅ Work calendar connected</div>
+            <div style="font-size:11px;color:var(--t2);margin-top:3px;">Connected as: ${email?.data?.value || 'Mindbowser account'}</div>
+            <div style="font-size:11px;color:var(--t3);margin-top:2px;">Real-time availability active in Shoot Planner</div>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="disconnectCalendar()">Disconnect</button>
+        </div>`;
+    } else {
+      CAL_CONNECTED = false;
+      block.innerHTML = `
+        <div style="padding:16px;background:var(--glass);border:1px solid var(--gb);border-radius:var(--radius-sm);">
+          <div style="font-weight:600;font-size:13px;margin-bottom:6px;">📅 Not connected</div>
+          <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your <strong>gaurav.mokal@mindbowser.com</strong> account to see real colleague availability in Shoot Planner.</div>
+          <div style="font-size:12px;color:var(--t3);margin-bottom:14px;">How it works: You log in with your MB account → Goofify reads colleague calendars → shows free slots automatically. Leaders do nothing.</div>
+          <button class="btn btn-primary" onclick="connectCalendar()">🔗 Connect Mindbowser calendar</button>
+        </div>`;
+    }
+  } catch(e) {
+    CAL_CONNECTED = false;
+    block.innerHTML = `
+      <div style="padding:16px;background:var(--glass);border:1px solid var(--gb);border-radius:var(--radius-sm);">
+        <div style="font-weight:600;font-size:13px;margin-bottom:6px;">📅 Not connected</div>
+        <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Connect your <strong>gaurav.mokal@mindbowser.com</strong> account to see real colleague availability in Shoot Planner.</div>
+        <button class="btn btn-primary" onclick="connectCalendar()">🔗 Connect Mindbowser calendar</button>
+      </div>`;
+  }
+}
+
+// Start OAuth flow
+function connectCalendar() {
+  const state = Math.random().toString(36).substring(2);
+  sessionStorage.setItem('cal_oauth_state', state);
+  const params = new URLSearchParams({
+    client_id: GCAL_CLIENT_ID,
+    redirect_uri: GCAL_REDIRECT,
+    response_type: 'code',
+    scope: 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+    access_type: 'offline',
+    prompt: 'consent',
+    state: state,
+    login_hint: 'gaurav.mokal@mindbowser.com'
+  });
+  const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
+  // Open in popup
+  const popup = window.open(authUrl, 'gcal_auth', 'width=500,height=600,scrollbars=yes');
+  // Listen for callback
+  const timer = setInterval(() => {
+    try {
+      if (popup.closed) {
+        clearInterval(timer);
+        loadCalendarStatus();
+      }
+    } catch(e) {}
+  }, 500);
+}
+
+// Handle OAuth callback (called from URL params on page load)
+async function handleCalendarCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const state = params.get('state');
+  const savedState = sessionStorage.getItem('cal_oauth_state');
+  if (!code) return false;
+  toast('Connecting calendar…', 'info');
+  try {
+    // Exchange code for tokens via Apps Script (to keep client secret safe)
+    const res = await fetch(DRIVE_API, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'exchangeCalendarCode', code, redirectUri: GCAL_REDIRECT }),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'Token exchange failed');
+    // Save tokens to Supabase
+    const expiry = new Date(Date.now() + (json.expires_in || 3600) * 1000).toISOString();
+    await saveCalSetting('cal_access_token', json.access_token);
+    await saveCalSetting('cal_refresh_token', json.refresh_token || '');
+    await saveCalSetting('cal_token_expiry', expiry);
+    await saveCalSetting('cal_email', json.email || 'gaurav.mokal@mindbowser.com');
+    CAL_CONNECTED = true;
+    CAL_ACCESS_TOKEN = json.access_token;
+    toast('Calendar connected ✓', 'ok');
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+    return true;
+  } catch(e) {
+    toast('Calendar connection failed: ' + e.message, 'err');
+    return false;
+  }
+}
+
+async function saveCalSetting(key, value) {
+  const { data } = await sb.from('app_settings').select('id').eq('key', key).single().catch(() => ({ data: null }));
+  if (data) {
+    await sb.from('app_settings').update({ value, updated_at: new Date().toISOString() }).eq('key', key);
+  } else {
+    await sb.from('app_settings').insert({ key, value });
+  }
+}
+
+async function disconnectCalendar() {
+  if (!confirm('Disconnect work calendar? Shoot Planner will use manual slots only.')) return;
+  try {
+    await sb.from('app_settings').delete().in('key', ['cal_access_token', 'cal_refresh_token', 'cal_token_expiry', 'cal_email']);
+    CAL_CONNECTED = false; CAL_ACCESS_TOKEN = null;
+    toast('Calendar disconnected', 'ok');
+    loadCalendarStatus();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// Get fresh access token (auto refresh if expired)
+async function getCalToken() {
+  try {
+    const { data: tokenData } = await sb.from('app_settings').select('value').eq('key', 'cal_access_token').single();
+    const { data: expiryData } = await sb.from('app_settings').select('value').eq('key', 'cal_token_expiry').single();
+    if (!tokenData?.value) return null;
+    // Check if expired (with 5 min buffer)
+    const expiry = new Date(expiryData?.value || 0);
+    if (new Date() < new Date(expiry.getTime() - 300000)) {
+      return tokenData.value; // Still valid
+    }
+    // Refresh token
+    const { data: refreshData } = await sb.from('app_settings').select('value').eq('key', 'cal_refresh_token').single();
+    if (!refreshData?.value) return null;
+    const res = await fetch(DRIVE_API, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'refreshCalendarToken', refreshToken: refreshData.value }),
+      headers: { 'Content-Type': 'text/plain' }
+    });
+    const json = await res.json();
+    if (!json.success) return null;
+    const newExpiry = new Date(Date.now() + (json.expires_in || 3600) * 1000).toISOString();
+    await saveCalSetting('cal_access_token', json.access_token);
+    await saveCalSetting('cal_token_expiry', newExpiry);
+    return json.access_token;
+  } catch(e) { return null; }
+}
+
+// Get leader's free slots from Google Calendar
+async function getLeaderFreeSlots(leaderName, date) {
+  const token = await getCalToken();
+  if (!token) return null;
+  try {
+    // Search for the leader's calendar by name in org
+    const searchRes = await fetch(
+      `https://www.googleapis.com/calendar/v3/users/me/calendarList`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const calList = await searchRes.json();
+    // Find matching calendar for leader
+    const leaderCal = (calList.items || []).find(c =>
+      c.summary?.toLowerCase().includes(leaderName.split(' ')[0].toLowerCase()) ||
+      c.summaryOverride?.toLowerCase().includes(leaderName.split(' ')[0].toLowerCase())
+    );
+    if (!leaderCal) return null; // Not shared yet
+    // Get free/busy for that calendar
+    const dayStart = new Date(date + 'T00:00:00');
+    const dayEnd = new Date(date + 'T23:59:59');
+    const fbRes = await fetch(
+      'https://www.googleapis.com/calendar/v3/freeBusy',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timeMin: dayStart.toISOString(),
+          timeMax: dayEnd.toISOString(),
+          items: [{ id: leaderCal.id }]
+        })
+      }
+    );
+    const fbData = await fbRes.json();
+    const busy = fbData.calendars?.[leaderCal.id]?.busy || [];
+    // Calculate free slots (9am-6pm working hours)
+    return calculateFreeSlots(busy, date);
+  } catch(e) { return null; }
+}
+
+function calculateFreeSlots(busyPeriods, date) {
+  const workStart = 9, workEnd = 18; // 9am to 6pm
+  const slots = [];
+  let current = workStart;
+  const toHour = iso => new Date(iso).getHours() + new Date(iso).getMinutes() / 60;
+  const fmtTime = h => {
+    const hrs = Math.floor(h);
+    const mins = Math.round((h - hrs) * 60);
+    const period = hrs >= 12 ? 'pm' : 'am';
+    const displayHr = hrs > 12 ? hrs - 12 : hrs;
+    return `${displayHr}${mins ? ':' + String(mins).padStart(2, '0') : ''}${period}`;
+  };
+  // Sort busy periods
+  const sorted = [...busyPeriods].sort((a, b) => new Date(a.start) - new Date(b.start));
+  for (const period of sorted) {
+    const busyStart = toHour(period.start);
+    const busyEnd = toHour(period.end);
+    if (busyStart > current) {
+      slots.push(`${fmtTime(current)}–${fmtTime(Math.min(busyStart, workEnd))}`);
+    }
+    current = Math.max(current, busyEnd);
+    if (current >= workEnd) break;
+  }
+  if (current < workEnd) slots.push(`${fmtTime(current)}–${fmtTime(workEnd)}`);
+  return slots.length ? slots : ['Fully booked'];
+}
+
+// Create calendar event when shoot is scheduled
+async function createShootCalendarEvent(leader, date, slot, topics) {
+  const token = await getCalToken();
+  if (!token) return; // Silent fail — shoot still saved
+  try {
+    const [startStr, endStr] = slot.split('–');
+    const parseTime = (str, date) => {
+      const d = new Date(date);
+      const isPm = str.includes('pm');
+      let hour = parseInt(str);
+      if (isPm && hour !== 12) hour += 12;
+      if (!isPm && hour === 12) hour = 0;
+      d.setHours(hour, 0, 0, 0);
+      return d.toISOString();
+    };
+    const event = {
+      summary: `🎬 Shoot — ${leader}`,
+      description: `Topics:\n${topics.join('\n')}\n\nScheduled via Goofify`,
+      start: { dateTime: parseTime(startStr, date), timeZone: 'Asia/Kolkata' },
+      end: { dateTime: parseTime(endStr, date), timeZone: 'Asia/Kolkata' },
+      attendees: [], // Can add leader emails later
+      reminders: { useDefault: false, overrides: [{ method: 'popup', minutes: 60 }] }
+    };
+    await fetch(
+      'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(event)
+      }
+    );
+    toast('📅 Calendar event created ✓', 'ok');
+  } catch(e) {
+    console.error('Calendar event creation failed:', e);
+    // Silent fail — shoot is already saved
+  }
+}
+
+// Load real availability in shoot planner
+async function loadLeaderCalendarAvailability(leaders, selectedDate) {
+  const token = await getCalToken();
+  if (!token) return; // No token — manual mode
+  const badge = document.getElementById('cal-mode-badge');
+  if (badge) { badge.textContent = '📅 Live calendar'; badge.style.background = 'var(--green-g)'; badge.style.color = 'var(--green)'; }
+  // Update each leader card with real slots
+  for (const leader of leaders) {
+    const slots = await getLeaderFreeSlots(leader.name, selectedDate);
+    if (!slots) continue; // Calendar not shared — keep manual
+    const card = document.getElementById(`leader-card-${leader.id}`);
+    if (!card) continue;
+    const slotsEl = card.querySelector('.leader-slots');
+    if (slotsEl) {
+      if (slots[0] === 'Fully booked') {
+        slotsEl.innerHTML = '<span style="color:var(--red);font-size:11px;">🔴 Fully booked</span>';
+      } else {
+        slotsEl.innerHTML = slots.map(s => `<span style="background:var(--green-g);color:var(--green);font-size:10px;padding:2px 7px;border-radius:10px;margin-right:4px;">${s}</span>`).join('');
+      }
+    }
+  }
+}
+
+// Override loadSettings to include calendar
+const _origLoadSettings = loadSettings;
+function loadSettings() {
+  _origLoadSettings();
+  loadCalendarStatus();
+}
+
+// Override loadShoots to show calendar availability
+const _origLoadShoots = loadShoots;
+async function loadShoots() {
+  await _origLoadShoots();
+  // Add IDs to leader cards for calendar updates
+  const leaders = cache.leaders || [];
+  // Add date picker for availability check
+  const grid = document.getElementById('leaders-grid');
+  if (grid && leaders.length) {
+    const today = new Date().toISOString().split('T')[0];
+    // Re-render leader cards with IDs and calendar slots
+    grid.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:12px;color:var(--t2);">Check availability for:</span>
+        <input type="date" id="cal-check-date" value="${today}" style="width:auto;font-size:12px;" onchange="refreshCalendarSlots()">
+        <button class="btn btn-sm" onclick="refreshCalendarSlots()">Check</button>
+      </div>
+      ${leaders.map(l => `
+        <div class="leader-card" id="leader-card-${l.id}">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="leader-av">${l.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:13px;">${l.name}</div>
+              <div style="font-size:11px;color:var(--t2);">${l.role||''}</div>
+              <div class="leader-slots" style="margin-top:4px;font-size:11px;color:var(--t3);">${l.free_slots||'No slots set'}</div>
+            </div>
+            ${availBadge(l.availability)}
+          </div>
+        </div>`).join('')}`;
+    // Check calendar connection and load real slots
+    const token = await getCalToken();
+    if (token) {
+      const badge = document.getElementById('cal-mode-badge');
+      if (badge) { badge.textContent = '📅 Live calendar'; badge.style.background = 'var(--green-g)'; badge.style.color = 'var(--green)'; }
+      loadLeaderCalendarAvailability(leaders, today);
+    } else {
+      const banner = document.getElementById('cal-not-connected-banner');
+      if (banner) banner.style.display = 'flex';
+    }
+  }
+}
+
+async function refreshCalendarSlots() {
+  const date = document.getElementById('cal-check-date')?.value;
+  if (!date) return;
+  const leaders = cache.leaders || [];
+  // Reset to manual slots first
+  leaders.forEach(l => {
+    const card = document.getElementById(`leader-card-${l.id}`);
+    if (card) {
+      const slotsEl = card.querySelector('.leader-slots');
+      if (slotsEl) slotsEl.innerHTML = `<span style="color:var(--t3);">Checking…</span>`;
+    }
+  });
+  await loadLeaderCalendarAvailability(leaders, date);
+}
+
+// Override submitShoot to create calendar event
+const _origSubmitShoot = submitShoot;
+async function submitShoot() {
+  const checkedTopics = [...document.querySelectorAll('#shoot-topics-picker input:checked')].map(cb => cb.value);
+  const leader = document.getElementById('s-leader').value;
+  const date = document.getElementById('s-date').value;
+  const slot = document.getElementById('s-slot').value;
+  const topicTitles = checkedTopics.map(id => {
+    const t = cache.topics.find(x => x.id === id);
+    return t ? t.title : id;
+  });
+  try {
+    await dbInsert('shoots', {
+      title: 'Shoot — ' + leader,
+      leader, shoot_date: date, slot,
+      topic_ids: checkedTopics.join(','),
+      status: 'Scheduled'
+    });
+    for (const tid of checkedTopics) {
+      await dbUpdate('topics', tid, { pipeline_stage: 'Shoot Scheduled', updated_at: new Date().toISOString() });
+    }
+    closeModal('addShoot');
+    toast('Scheduled ✓', 'ok');
+    // Create calendar event if connected
+    if (slot && date) await createShootCalendarEvent(leader, date, slot, topicTitles);
+    loadShoots();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+// Check for calendar OAuth callback on page load
+async function checkCalendarCallback() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('code') && params.get('scope')?.includes('calendar')) {
+    await handleCalendarCallback();
+  }
+}
 </script>
 </body>
 </html>
