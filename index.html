@@ -1347,7 +1347,7 @@ function showGuestInput() { document.getElementById('guest-input-wrap').style.di
 async function enterAsGuest() {
   const token = document.getElementById('guest-token-input').value.trim();
   if (!token) { toast('Enter a guest token', 'err'); return; }
-  const { data, error } = await sb.from('guest_tokens').select('*').eq('token', token).eq('status', 'active').single();
+  const { data, error } = await sb.from('guest_tokens').select('*').eq('token', token).eq('status', 'active').maybeSingle();
   if (error || !data) { toast('Invalid or expired token', 'err'); return; }
   if (data.expiry_date && new Date(data.expiry_date) < new Date()) { toast('Token has expired', 'err'); return; }
   IS_GUEST = true; GUEST_TOKEN = token;
@@ -1362,7 +1362,7 @@ async function enterAsGuest() {
 // ============================================================
 async function checkUserAccess(email) {
   if (email === SUPER_ADMIN_EMAIL) return { role: 'superadmin', sections: 'all', allowed: true };
-  const { data } = await sb.from('users').select('*').eq('email', email).single();
+  const { data } = await sb.from('users').select('*').eq('email', email).maybeSingle();
   if (!data) return { allowed: false };
   return { role: data.role, sections: data.sections, allowed: true };
 }
@@ -1445,15 +1445,17 @@ async function dbGet(table, filters = {}) {
 }
 
 async function dbInsert(table, row) {
-  const { data, error } = await sb.from(table).insert(row).select().single();
+  const { data, error } = await sb.from(table).insert(row).select().maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error('Insert failed — no data returned');
   logActivity('Added to ' + table, JSON.stringify(row).slice(0, 100));
   return data;
 }
 
 async function dbUpdate(table, id, updates) {
-  const { data, error } = await sb.from(table).update(updates).eq('id', id).select().single();
+  const { data, error } = await sb.from(table).update(updates).eq('id', id).select().maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error('Record not found: ' + id);
   return data;
 }
 
@@ -1687,7 +1689,7 @@ async function uploadScript(){
     const b64=await fileToB64(selectedFile);clearInterval(t);document.getElementById('prog-fill').style.width='95%';
     const res=await fetch(DRIVE_API,{method:'POST',body:JSON.stringify({action:'uploadScript',topicId,topicTitle,leader,cluster,contentType:ct,fileName:selectedFile.name,mimeType:selectedFile.type||'application/octet-stream',fileDataBase64:b64}),headers:{'Content-Type':'text/plain'}});
     const json=await res.json();if(!json.success)throw new Error(json.error);
-    await dbInsert('scripts',{topic_id:topicId,topic_title:topicTitle,leader,cluster,file_name:json.data.fileName,mime_type:selectedFile.type,drive_file_id:json.data.fileId||'',drive_file_url:json.data.fileUrl,script_status:'Drafting',content_type:ct,platform:'YouTube'});
+    await dbInsert('scripts',{topic_id:topicId||null,topic_title:topicTitle,leader,cluster,file_name:json.data.fileName,mime_type:selectedFile.type,drive_file_id:json.data.fileId||'',drive_file_url:json.data.fileUrl,script_status:'Drafting',content_type:ct,platform:'YouTube'});
     // Update topic stage — non-blocking, won't fail upload if topic not found
     try { await dbUpdate('topics',topicId,{pipeline_stage:'Scripting',updated_at:new Date().toISOString()}); } catch(e) { console.warn('Topic stage update skipped:', e.message); }
     document.getElementById('prog-fill').style.width='100%';document.getElementById('up-pct').textContent='100%';
@@ -2806,7 +2808,7 @@ async function handleCalendarCallback() {
 }
 
 async function saveCalSetting(key, value) {
-  const { data } = await sb.from('app_settings').select('id').eq('key', key).single().catch(() => ({ data: null }));
+  const { data } = await sb.from('app_settings').select('id').eq('key', key).maybeSingle().catch(() => ({ data: null }));
   if (data) {
     await sb.from('app_settings').update({ value, updated_at: new Date().toISOString() }).eq('key', key);
   } else {
