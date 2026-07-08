@@ -2010,6 +2010,7 @@ async function confirmDeleteScript(){
   try{if(fileId)try{await fetch(DRIVE_API,{method:'POST',body:JSON.stringify({action:'deleteScript',id,fileId,topicId}),headers:{'Content-Type':'text/plain'}});}catch(e){}
   await dbDelete('scripts',id);if(topicId)await dbUpdate('topics',topicId,{pipeline_stage:'Researching',script_id:null,updated_at:new Date().toISOString()});
   closeModal('deleteScript');toast('Script deleted permanently ✓','ok');loadScripts();}catch(e){toast('Delete failed: '+e.message,'err');}
+}
 
 // ── Share Script ─────────────────────────────────────────────
 function openShareScript(fileId, fileName) {
@@ -2074,8 +2075,6 @@ function copyShareLink() {
     document.execCommand('copy');
     toast('Link copied ✓', 'ok');
   });
-}
-
 }
 
 // ============================================================
