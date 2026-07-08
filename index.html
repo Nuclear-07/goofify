@@ -1445,18 +1445,16 @@ async function dbGet(table, filters = {}) {
 }
 
 async function dbInsert(table, row) {
-  const { data, error } = await sb.from(table).insert(row).select().maybeSingle();
+  const { data, error } = await sb.from(table).insert(row).select();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error('Insert failed — no data returned');
   logActivity('Added to ' + table, JSON.stringify(row).slice(0, 100));
-  return data;
+  return (data && data[0]) || row;
 }
 
 async function dbUpdate(table, id, updates) {
-  const { data, error } = await sb.from(table).update(updates).eq('id', id).select().maybeSingle();
+  const { data, error } = await sb.from(table).update(updates).eq('id', id).select();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error('Record not found: ' + id);
-  return data;
+  return (data && data[0]) || updates;
 }
 
 async function dbDelete(table, id) {
