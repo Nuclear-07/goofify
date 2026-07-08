@@ -1511,6 +1511,7 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){
 // ============================================================
 const VIEW_TITLES={dashboard:'Dashboard',pipeline:'Content pipeline',topics:'Topic inbox',shoots:'Shoot planner',scripts:'Scripts & uploads',drive:'Drive tree',rework:'Rework tracker',analytics:'Analytics — YT & LinkedIn',ytchannels:'YouTube Channels & Before/After',shorts:'Shorts & Reels',reports:'Reports',users:'Users & Roles',admin:'Admin panel',settings:'Settings',notes:'Notes & Ideas',worklog:'Work Log'};
 function nav(name){
+  mobClose();
   if(!canAccess(name)&&name!=='settings'&&name!=='admin'){toast('No access to this section','info');return;}
   // Users & Roles — Super Admin only
   if(name==='users'&&USER_ROLE!=='superadmin'){toast('Only Super Admin can manage users','info');return;}
