@@ -355,6 +355,10 @@ select option{background:#1a1a2e;color:#fff;}
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
       Notes & Ideas
     </div>
+    <div class="nav-item" id="nav-worklog" onclick="nav('worklog')">
+      <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+      Work Log
+    </div>
     <div class="nav-gl">Account</div>
     <div class="nav-item" id="nav-settings" onclick="nav('settings')">
       <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="1.5"/><path stroke-width="1.5" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -689,6 +693,58 @@ select option{background:#1a1a2e;color:#fff;}
         <div class="card"><div class="sec-head">Activity log</div><div id="activity-log"></div></div>
       </div>
 
+      <!-- WORK LOG -->
+      <div class="view" id="view-worklog">
+        <!-- Day status banner -->
+        <div id="wl-day-banner" style="margin-bottom:14px;"></div>
+
+        <!-- Top metrics -->
+        <div class="g4" style="margin-bottom:14px;">
+          <div class="metric-card"><div class="metric-label">Hours today</div><div class="metric-val" id="wl-today-hrs">—</div><div class="metric-sub">Logged so far</div></div>
+          <div class="metric-card"><div class="metric-label">Hours this week</div><div class="metric-val" id="wl-week-hrs">—</div><div class="metric-sub">Mon–today</div></div>
+          <div class="metric-card"><div class="metric-label">Tasks this week</div><div class="metric-val" id="wl-week-tasks">—</div><div class="metric-sub">Completed</div></div>
+          <div class="metric-card"><div class="metric-label">Pending follow-ups</div><div class="metric-val" id="wl-followups">—</div><div class="metric-sub">Awaiting response</div></div>
+        </div>
+
+        <!-- Actions -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="openModal('addWorkLog')">+ Log task</button>
+          <button class="btn" onclick="openModal('addFollowup')" style="border-color:var(--blue);color:var(--blue);">📞 Log follow-up</button>
+          <button class="btn" onclick="openModal('addLeaveLog')" style="border-color:var(--amber);color:var(--amber);">🏖️ Log leave</button>
+          <button class="btn" onclick="openModal('addWeeklyPlan')" style="border-color:var(--green);color:var(--green);">📅 Next week plan</button>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <select id="wl-view-mode" onchange="loadWorkLog()" style="width:auto;font-size:12px;">
+              <option value="week">This week</option>
+              <option value="today">Today</option>
+              <option value="month">This month</option>
+              <option value="custom">Custom range</option>
+            </select>
+            <input type="date" id="wl-custom-from" style="display:none;width:auto;font-size:12px;" onchange="loadWorkLog()">
+            <input type="date" id="wl-custom-to" style="display:none;width:auto;font-size:12px;" onchange="loadWorkLog()">
+            <button class="btn btn-primary btn-sm" onclick="generateWeeklyReport()">📊 Weekly report</button>
+          </div>
+        </div>
+
+        <!-- Work log entries by day -->
+        <div id="wl-entries" style="display:flex;flex-direction:column;gap:12px;"></div>
+
+        <!-- Follow-ups section -->
+        <div class="card" style="margin-top:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div class="sec-head" style="margin:0;">📞 Follow-up tracker</div>
+            <select id="wl-fu-filter" onchange="loadFollowups()" style="width:auto;font-size:11px;">
+              <option value="all">All</option>
+              <option value="waiting">Waiting</option>
+              <option value="responded">Responded</option>
+            </select>
+          </div>
+          <div id="wl-followups-list"></div>
+        </div>
+
+        <!-- Weekly report output -->
+        <div id="wl-report-output" style="margin-top:14px;"></div>
+      </div>
+
       <!-- NOTES -->
       <div class="view" id="view-notes">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
@@ -986,6 +1042,171 @@ select option{background:#1a1a2e;color:#fff;}
 
 <!-- Delete Script -->
 <div class="overlay" id="modal-deleteScript"><div class="modal" style="max-width:400px;"><div class="modal-head"><div class="modal-title">Delete script permanently</div><button class="modal-close" onclick="closeModal('deleteScript')">✕</button></div><input type="hidden" id="del-script-id"><input type="hidden" id="del-file-id"><input type="hidden" id="del-topic-id"><div style="background:var(--red-g);border:1px solid var(--red);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;"><div style="font-weight:600;font-size:13px;color:var(--red);margin-bottom:4px;">⚠️ This cannot be undone</div><div style="font-size:12px;color:var(--t2);">This will permanently delete <strong id="del-file-display"></strong> from Goofify and Google Drive.</div></div><div class="modal-foot"><button class="btn" onclick="closeModal('deleteScript')">Cancel</button><button class="btn btn-danger" onclick="confirmDeleteScript()">Yes, delete permanently</button></div></div></div>
+
+<!-- Add Work Log -->
+<div class="overlay" id="modal-addWorkLog">
+  <div class="modal" style="width:560px;">
+    <div class="modal-head"><div class="modal-title">Log task</div><button class="modal-close" onclick="closeModal('addWorkLog')">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Date</div><input type="date" id="wl-date"></div>
+      <div class="form-group"><div class="form-label">Task type</div>
+        <select id="wl-type" onchange="toggleWorkLogFields()">
+          <option value="pipeline">📋 Pipeline task</option>
+          <option value="extra">⭐ Extra task (assigned by someone)</option>
+          <option value="meeting">🤝 Meeting</option>
+          <option value="research">🔍 Research</option>
+          <option value="social">📱 Social media</option>
+          <option value="other">📌 Other</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><div class="form-label">Task title / description</div><input id="wl-title" placeholder="What did you do?"></div>
+
+    <!-- Pipeline fields -->
+    <div id="wl-pipeline-fields">
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">Linked topic</div><select id="wl-topic"><option value="">— select topic —</option></select></div>
+        <div class="form-group"><div class="form-label">Sent to</div><input id="wl-sent-to" placeholder="e.g. Rahul K. — SEO Review"></div>
+      </div>
+    </div>
+
+    <!-- Extra task fields -->
+    <div id="wl-extra-fields" style="display:none;">
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">Assigned by</div><input id="wl-assigned-by" placeholder="e.g. Mohsin Shaikh"></div>
+        <div class="form-group"><div class="form-label">Category</div>
+          <select id="wl-category">
+            <option>Social Media</option><option>Design</option><option>Research</option>
+            <option>Admin</option><option>Content</option><option>Meeting</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meeting fields -->
+    <div id="wl-meeting-fields" style="display:none;">
+      <div class="form-row">
+        <div class="form-group"><div class="form-label">Meeting with</div><input id="wl-meeting-with" placeholder="e.g. Mohsin + Manisha"></div>
+        <div class="form-group"><div class="form-label">Outcome</div><input id="wl-outcome" placeholder="e.g. Approved 3 topics"></div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Time spent</div>
+        <div style="display:flex;gap:8px;">
+          <input type="number" id="wl-hrs" placeholder="0" min="0" max="12" style="width:70px;"> <span style="line-height:38px;color:var(--t3);">hrs</span>
+          <input type="number" id="wl-mins" placeholder="0" min="0" max="59" style="width:70px;"> <span style="line-height:38px;color:var(--t3);">min</span>
+        </div>
+      </div>
+      <div class="form-group"><div class="form-label">Status</div>
+        <select id="wl-status">
+          <option value="done">✅ Done</option>
+          <option value="inprogress">⏳ In Progress</option>
+          <option value="blocked">🔴 Blocked</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="wl-blocked-field" style="display:none;">
+      <div class="form-group"><div class="form-label">Blocked by</div><input id="wl-blocked-by" placeholder="e.g. Dr. Vivek — no response"></div>
+    </div>
+
+    <div class="form-group"><div class="form-label">Proof link</div><input id="wl-proof" placeholder="Drive link / YouTube link / doc URL"></div>
+    <div class="form-group"><div class="form-label">Notes</div><textarea id="wl-notes" rows="2" placeholder="Any extra context…"></textarea></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addWorkLog')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitWorkLog()">Log task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Follow-up -->
+<div class="overlay" id="modal-addFollowup">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">📞 Log follow-up</div><button class="modal-close" onclick="closeModal('addFollowup')">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Date</div><input type="date" id="fu-date"></div>
+      <div class="form-group"><div class="form-label">Following up with</div><input id="fu-with" placeholder="e.g. Dr. Vivek, Rahul K."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Linked topic</div><select id="fu-topic"><option value="">— select topic —</option></select></div>
+      <div class="form-group"><div class="form-label">Channel</div>
+        <select id="fu-channel">
+          <option>WhatsApp</option><option>Email</option><option>Call</option><option>In person</option><option>Slack</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><div class="form-label">What you said / asked</div><textarea id="fu-message" rows="2" placeholder="e.g. Script ready for review, please check when free"></textarea></div>
+    <div class="form-group"><div class="form-label">Their response</div><textarea id="fu-response" rows="2" placeholder="e.g. Will check by tomorrow / No response yet"></textarea></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Status</div>
+        <select id="fu-status"><option value="waiting">⏳ Waiting</option><option value="responded">✅ Responded</option><option value="resolved">🎉 Resolved</option></select>
+      </div>
+      <div class="form-group"><div class="form-label">Next follow-up date</div><input type="date" id="fu-next"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addFollowup')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitFollowup()">Log follow-up</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Leave -->
+<div class="overlay" id="modal-addLeaveLog">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">🏖️ Log leave / off day</div><button class="modal-close" onclick="closeModal('addLeaveLog')">✕</button></div>
+    <div class="form-row">
+      <div class="form-group"><div class="form-label">Date</div><input type="date" id="lv-date"></div>
+      <div class="form-group"><div class="form-label">Leave type</div>
+        <select id="lv-type">
+          <option value="casual">Casual leave</option>
+          <option value="sick">Sick leave</option>
+          <option value="wfh">Work from home</option>
+          <option value="halfday">Half day</option>
+          <option value="holiday">Public holiday</option>
+          <option value="weekend">Weekend off</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><div class="form-label">Approved by</div><input id="lv-approved" placeholder="e.g. Mohsin Shaikh"></div>
+    <div class="form-group"><div class="form-label">Notes</div><input id="lv-notes" placeholder="Optional — reason or context"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addLeaveLog')">Cancel</button>
+      <button class="btn btn-primary" onclick="submitLeaveLog()">Log leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- Next Week Plan -->
+<div class="overlay" id="modal-addWeeklyPlan">
+  <div class="modal" style="width:600px;">
+    <div class="modal-head"><div class="modal-title">📅 Next week plan</div><button class="modal-close" onclick="closeModal('addWeeklyPlan')">✕</button></div>
+    <div style="font-size:12px;color:var(--t2);margin-bottom:14px;">Tentative plan for next week. Will be shared with your manager.</div>
+    <div id="weekly-plan-days" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div style="margin-top:14px;padding:10px;background:var(--glass);border-radius:var(--radius-sm);">
+      <div style="font-size:11px;font-weight:600;color:var(--t3);margin-bottom:8px;">SUGGESTED FROM PIPELINE</div>
+      <div id="weekly-plan-suggestions" style="font-size:12px;color:var(--t2);"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('addWeeklyPlan')">Cancel</button>
+      <button class="btn" onclick="saveWeeklyPlan(false)">Save draft</button>
+      <button class="btn btn-primary" onclick="saveWeeklyPlan(true)">Save & share with manager</button>
+    </div>
+  </div>
+</div>
+
+<!-- Weekly Report Modal -->
+<div class="overlay" id="modal-weeklyReport">
+  <div class="modal" style="width:600px;max-height:90vh;">
+    <div class="modal-head"><div class="modal-title">📊 Weekly report</div><button class="modal-close" onclick="closeModal('weeklyReport')">✕</button></div>
+    <div id="weekly-report-content" style="font-size:13px;"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('weeklyReport')">Close</button>
+      <button class="btn btn-primary" onclick="copyWeeklyReport()">Copy as text</button>
+      <button class="btn" onclick="window.print()">Print / PDF</button>
+    </div>
+  </div>
+</div>
 
 <!-- Add Note -->
 <div class="overlay" id="modal-addNote">
@@ -1287,7 +1508,7 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){
 // ============================================================
 //  NAVIGATION
 // ============================================================
-const VIEW_TITLES={dashboard:'Dashboard',pipeline:'Content pipeline',topics:'Topic inbox',shoots:'Shoot planner',scripts:'Scripts & uploads',drive:'Drive tree',rework:'Rework tracker',analytics:'Analytics — YT & LinkedIn',ytchannels:'YouTube Channels & Before/After',shorts:'Shorts & Reels',reports:'Reports',users:'Users & Roles',admin:'Admin panel',settings:'Settings',notes:'Notes & Ideas'};
+const VIEW_TITLES={dashboard:'Dashboard',pipeline:'Content pipeline',topics:'Topic inbox',shoots:'Shoot planner',scripts:'Scripts & uploads',drive:'Drive tree',rework:'Rework tracker',analytics:'Analytics — YT & LinkedIn',ytchannels:'YouTube Channels & Before/After',shorts:'Shorts & Reels',reports:'Reports',users:'Users & Roles',admin:'Admin panel',settings:'Settings',notes:'Notes & Ideas',worklog:'Work Log'};
 function nav(name){
   if(!canAccess(name)&&name!=='settings'&&name!=='admin'){toast('No access to this section','info');return;}
   // Users & Roles — Super Admin only
@@ -1315,6 +1536,7 @@ function loadView(n){
   else if(n==='admin')loadAdmin();
   else if(n==='settings')loadSettings();
   else if(n==='notes')loadNotes();
+  else if(n==='worklog')loadWorkLog();
 }
 
 // ============================================================
@@ -1804,8 +2026,482 @@ window.addEventListener('load',async()=>{
 });
 
 // ============================================================
-//  STRICT ROLE ENFORCEMENT
+//  WORK LOG
 // ============================================================
+
+const INDIA_TZ = 'Asia/Kolkata';
+const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function todayStr() { return new Date().toLocaleDateString('en-CA', { timeZone: INDIA_TZ }); }
+function isWeekend(dateStr) { const d = new Date(dateStr + 'T00:00:00'); return d.getDay() === 0 || d.getDay() === 6; }
+function getWeekStart(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(d.setDate(diff));
+  return mon.toLocaleDateString('en-CA');
+}
+function getWeekDates(weekStart) {
+  const dates = [];
+  const start = new Date(weekStart + 'T00:00:00');
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    dates.push(d.toLocaleDateString('en-CA'));
+  }
+  return dates;
+}
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+function fmtMins(mins) {
+  if (!mins) return '—';
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return h > 0 ? `${h}h ${m > 0 ? m + 'm' : ''}`.trim() : `${m}m`;
+}
+
+async function loadWorkLog() {
+  // Check day status
+  await checkDayStatus();
+  // Load entries based on view mode
+  const mode = document.getElementById('wl-view-mode')?.value || 'week';
+  const customFrom = document.getElementById('wl-custom-from');
+  const customTo = document.getElementById('wl-custom-to');
+  if (mode === 'custom') {
+    if (customFrom) customFrom.style.display = 'block';
+    if (customTo) customTo.style.display = 'block';
+  } else {
+    if (customFrom) customFrom.style.display = 'none';
+    if (customTo) customTo.style.display = 'none';
+  }
+  let fromDate, toDate;
+  const today = todayStr();
+  if (mode === 'today') { fromDate = toDate = today; }
+  else if (mode === 'week') { fromDate = getWeekStart(today); toDate = today; }
+  else if (mode === 'month') { const d = new Date(today + 'T00:00:00'); fromDate = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; toDate = today; }
+  else { fromDate = customFrom?.value || today; toDate = customTo?.value || today; }
+
+  try {
+    const { data: entries } = await sb.from('work_log').select('*').gte('date', fromDate).lte('date', toDate).order('date', { ascending: false });
+    renderWorkLogEntries(entries || [], fromDate, toDate);
+    // Update metrics
+    const todayEntries = (entries || []).filter(e => e.date === today && !e.is_leave);
+    const weekEntries = (entries || []).filter(e => e.date >= getWeekStart(today) && !e.is_leave);
+    document.getElementById('wl-today-hrs').textContent = fmtMins(todayEntries.reduce((s,e) => s + (e.time_spent_min||0), 0));
+    document.getElementById('wl-week-hrs').textContent = fmtMins(weekEntries.reduce((s,e) => s + (e.time_spent_min||0), 0));
+    document.getElementById('wl-week-tasks').textContent = weekEntries.filter(e => e.status === 'done').length;
+  } catch(e) { console.error('Work log:', e); }
+
+  await loadFollowups();
+  // Populate topic dropdowns
+  const topics = cache.topics.length ? cache.topics : await dbGet('topics');
+  const topicOpts = '<option value="">— select topic —</option>' + topics.map(t => `<option value="${t.id}" data-title="${t.title}">${t.title}</option>`).join('');
+  ['wl-topic','fu-topic'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = topicOpts; });
+  // Set default dates
+  const wlDate = document.getElementById('wl-date'); if(wlDate && !wlDate.value) wlDate.value = today;
+  const fuDate = document.getElementById('fu-date'); if(fuDate && !fuDate.value) fuDate.value = today;
+  const lvDate = document.getElementById('lv-date'); if(lvDate && !lvDate.value) lvDate.value = today;
+}
+
+async function checkDayStatus() {
+  const banner = document.getElementById('wl-day-banner');
+  if (!banner) return;
+  const today = todayStr();
+  const d = new Date(today + 'T00:00:00');
+  const dayName = DAYS[d.getDay()];
+  // Check if weekend
+  if (isWeekend(today)) {
+    banner.innerHTML = `<div style="background:var(--blue-g);border:1px solid var(--blue);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-size:13px;color:var(--blue);">🏖️ Today is ${dayName} — weekend. Working today?</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-sm" onclick="openWorkLogForToday(true)">Yes, log work</button>
+        <button class="btn btn-sm" onclick="document.getElementById('wl-day-banner').style.display='none'">No thanks</button>
+      </div>
+    </div>`;
+    return;
+  }
+  // Check if public holiday
+  try {
+    const { data: holiday } = await sb.from('public_holidays').select('name').eq('date', today).maybeSingle();
+    if (holiday) {
+      banner.innerHTML = `<div style="background:var(--amber-g);border:1px solid var(--amber);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:13px;color:var(--amber);">🎉 Today is ${holiday.name} — public holiday. Working today?</span>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-sm" onclick="openWorkLogForToday(false)">Yes, log work</button>
+          <button class="btn btn-sm" onclick="logHolidayOff('${holiday.name}')">No, taking day off</button>
+        </div>
+      </div>`;
+      return;
+    }
+  } catch(e) {}
+  banner.innerHTML = '';
+}
+
+function openWorkLogForToday(isWeekendWork) {
+  document.getElementById('wl-day-banner').style.display = 'none';
+  openModal('addWorkLog');
+}
+
+async function logHolidayOff(holidayName) {
+  try {
+    await sb.from('work_log').insert({ date: todayStr(), task_type: 'leave', title: holidayName, is_leave: true, leave_type: 'holiday', time_spent_min: 0 });
+    toast('Holiday logged ✓', 'ok');
+    document.getElementById('wl-day-banner').style.display = 'none';
+    loadWorkLog();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function renderWorkLogEntries(entries, fromDate, toDate) {
+  const container = document.getElementById('wl-entries');
+  if (!entries.length) { container.innerHTML = '<div class="empty"><p>No entries for this period</p><small>Click + Log task to start</small></div>'; return; }
+  // Group by date
+  const grouped = {};
+  entries.forEach(e => { if (!grouped[e.date]) grouped[e.date] = []; grouped[e.date].push(e); });
+  container.innerHTML = Object.entries(grouped).sort((a,b) => b[0] > a[0] ? 1 : -1).map(([date, dayEntries]) => {
+    const totalMins = dayEntries.filter(e => !e.is_leave).reduce((s,e) => s + (e.time_spent_min||0), 0);
+    const hasLeave = dayEntries.some(e => e.is_leave);
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--gb);">
+        <div>
+          <div style="font-weight:600;font-size:14px;">${fmtDate(date)}</div>
+          ${hasLeave ? '<span class="badge badge-amber" style="margin-top:4px;">🏖️ Leave / Off</span>' : ''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:18px;font-weight:700;color:var(--acc-l);">${fmtMins(totalMins)}</div>
+          <div style="font-size:10px;color:var(--t3);">${dayEntries.filter(e=>!e.is_leave).length} tasks</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${dayEntries.map(e => renderWorkLogEntry(e)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderWorkLogEntry(e) {
+  if (e.is_leave) return `<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--amber-g);border-radius:var(--radius-sm);">
+    <span style="font-size:16px;">🏖️</span>
+    <div style="flex:1;"><div style="font-weight:500;font-size:13px;">${e.title}</div><div style="font-size:11px;color:var(--t3);">${e.leave_type||''} ${e.notes?'· '+e.notes:''}</div></div>
+    <button class="btn btn-sm btn-danger btn-icon" onclick="deleteWorkLog('${e.id}')">✕</button>
+  </div>`;
+
+  const typeIcon = { pipeline:'📋', extra:'⭐', meeting:'🤝', research:'🔍', social:'📱', other:'📌' };
+  const statusBadge = e.status==='done'?'<span class="badge badge-green">✅ Done</span>':e.status==='blocked'?'<span class="badge badge-red">🔴 Blocked</span>':'<span class="badge badge-amber">⏳ In progress</span>';
+
+  return `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--glass);border:1px solid var(--gb);border-radius:var(--radius-sm);${e.task_type==='extra'?'border-left:3px solid var(--amber);':''}">
+    <span style="font-size:16px;margin-top:1px;">${typeIcon[e.task_type]||'📌'}</span>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+        <span style="font-weight:500;font-size:13px;">${e.title}</span>
+        ${statusBadge}
+        ${e.task_type==='extra'?`<span class="badge badge-amber" style="font-size:10px;">⭐ Extra — ${e.assigned_by||'?'}</span>`:''}
+      </div>
+      <div style="font-size:11px;color:var(--t3);display:flex;gap:10px;flex-wrap:wrap;">
+        ${e.time_spent_min?`<span>⏱ ${fmtMins(e.time_spent_min)}</span>`:''}
+        ${e.topic_title?`<span>📋 ${e.topic_title}</span>`:''}
+        ${e.sent_to||e.meeting_with?`<span>→ ${e.sent_to||e.meeting_with}</span>`:''}
+        ${e.blocked_by?`<span style="color:var(--red);">🔴 Blocked: ${e.blocked_by}</span>`:''}
+      </div>
+      ${e.proof_link?`<a href="${e.proof_link}" target="_blank" style="font-size:11px;color:var(--acc-l);margin-top:4px;display:inline-block;">🔗 Proof link ↗</a>`:''}
+      ${e.notes?`<div style="font-size:11px;color:var(--t2);margin-top:4px;">${e.notes}</div>`:''}
+    </div>
+    <button class="btn btn-sm btn-icon btn-danger" onclick="deleteWorkLog('${e.id}')">✕</button>
+  </div>`;
+}
+
+async function loadFollowups() {
+  const filter = document.getElementById('wl-fu-filter')?.value || 'all';
+  try {
+    let q = sb.from('followups').select('*').order('date', { ascending: false });
+    if (filter !== 'all') q = q.eq('status', filter);
+    const { data } = await q;
+    const list = document.getElementById('wl-followups-list');
+    if (!list) return;
+    const waiting = (data||[]).filter(f => f.status === 'waiting').length;
+    document.getElementById('wl-followups').textContent = waiting;
+    list.innerHTML = (data||[]).length ? (data||[]).map(f => `
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--gb);">
+        <span style="font-size:16px;">${f.channel==='WhatsApp'?'💬':f.channel==='Email'?'📧':f.channel==='Call'?'📞':'🤝'}</span>
+        <div style="flex:1;">
+          <div style="font-weight:500;font-size:13px;">${f.following_up_with} ${f.topic_title?`<span style="font-size:11px;color:var(--t3);">re: ${f.topic_title}</span>`:''}</div>
+          <div style="font-size:11px;color:var(--t2);margin-top:2px;">${f.message||''}</div>
+          ${f.response?`<div style="font-size:11px;color:var(--green);margin-top:2px;">Response: ${f.response}</div>`:''}
+          <div style="font-size:10px;color:var(--t3);margin-top:4px;">${f.channel} · ${fmtDate(f.date)} ${f.next_followup_date?`· Next: ${fmtDate(f.next_followup_date)}`:''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+          <span class="badge ${f.status==='waiting'?'badge-amber':f.status==='responded'?'badge-blue':'badge-green'}">${f.status}</span>
+          ${f.status==='waiting'?`<button class="btn btn-sm" style="font-size:10px;" onclick="markFollowupResponded('${f.id}')">Mark responded</button>`:''}
+          <button class="btn btn-sm btn-danger btn-icon" onclick="deleteFollowup('${f.id}')">✕</button>
+        </div>
+      </div>`).join('') : '<div class="empty"><small>No follow-ups logged yet</small></div>';
+  } catch(e) { console.error('Followups:', e); }
+}
+
+// Toggle work log fields based on type
+function toggleWorkLogFields() {
+  const type = document.getElementById('wl-type').value;
+  document.getElementById('wl-pipeline-fields').style.display = type === 'pipeline' ? 'block' : 'none';
+  document.getElementById('wl-extra-fields').style.display = type === 'extra' ? 'block' : 'none';
+  document.getElementById('wl-meeting-fields').style.display = type === 'meeting' ? 'block' : 'none';
+}
+
+// Watch status change to show blocked field
+document.addEventListener('DOMContentLoaded', () => {
+  const statusEl = document.getElementById('wl-status');
+  if (statusEl) statusEl.addEventListener('change', () => {
+    const blocked = document.getElementById('wl-blocked-field');
+    if (blocked) blocked.style.display = statusEl.value === 'blocked' ? 'block' : 'none';
+  });
+});
+
+async function submitWorkLog() {
+  const title = document.getElementById('wl-title').value.trim();
+  if (!title) { toast('Enter a task description', 'err'); return; }
+  const hrs = parseInt(document.getElementById('wl-hrs').value || '0');
+  const mins = parseInt(document.getElementById('wl-mins').value || '0');
+  const totalMins = hrs * 60 + mins;
+  const topicSel = document.getElementById('wl-topic');
+  const topicId = topicSel?.value || null;
+  const topicTitle = topicId ? (topicSel.options[topicSel.selectedIndex]?.dataset.title || '') : '';
+  try {
+    await sb.from('work_log').insert({
+      date: document.getElementById('wl-date').value || todayStr(),
+      task_type: document.getElementById('wl-type').value,
+      title,
+      topic_id: topicId || null,
+      topic_title: topicTitle,
+      assigned_by: document.getElementById('wl-assigned-by')?.value || '',
+      category: document.getElementById('wl-category')?.value || '',
+      sent_to: document.getElementById('wl-sent-to')?.value || '',
+      meeting_with: document.getElementById('wl-meeting-with')?.value || '',
+      outcome: document.getElementById('wl-outcome')?.value || '',
+      time_spent_min: totalMins,
+      status: document.getElementById('wl-status').value,
+      blocked_by: document.getElementById('wl-blocked-by')?.value || '',
+      proof_link: document.getElementById('wl-proof').value.trim(),
+      notes: document.getElementById('wl-notes').value.trim(),
+      is_leave: false
+    });
+    closeModal('addWorkLog');
+    toast('Task logged ✓', 'ok');
+    // Reset form
+    ['wl-title','wl-sent-to','wl-assigned-by','wl-outcome','wl-meeting-with','wl-proof','wl-notes','wl-blocked-by'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    document.getElementById('wl-hrs').value = '';
+    document.getElementById('wl-mins').value = '';
+    loadWorkLog();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function submitFollowup() {
+  const withPerson = document.getElementById('fu-with').value.trim();
+  if (!withPerson) { toast('Enter who you followed up with', 'err'); return; }
+  const topicSel = document.getElementById('fu-topic');
+  const topicId = topicSel?.value || null;
+  const topicTitle = topicId ? (topicSel.options[topicSel.selectedIndex]?.dataset.title || '') : '';
+  try {
+    await sb.from('followups').insert({
+      date: document.getElementById('fu-date').value || todayStr(),
+      following_up_with: withPerson,
+      topic_id: topicId || null,
+      topic_title: topicTitle,
+      channel: document.getElementById('fu-channel').value,
+      message: document.getElementById('fu-message').value.trim(),
+      response: document.getElementById('fu-response').value.trim(),
+      status: document.getElementById('fu-status').value,
+      next_followup_date: document.getElementById('fu-next').value || ''
+    });
+    closeModal('addFollowup');
+    toast('Follow-up logged ✓', 'ok');
+    ['fu-with','fu-message','fu-response','fu-next'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    loadWorkLog();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function submitLeaveLog() {
+  try {
+    const type = document.getElementById('lv-type').value;
+    const title = { casual:'Casual leave', sick:'Sick leave', wfh:'Work from home', halfday:'Half day leave', holiday:'Public holiday', weekend:'Weekend off' }[type] || type;
+    await sb.from('work_log').insert({
+      date: document.getElementById('lv-date').value || todayStr(),
+      task_type: 'leave',
+      title,
+      is_leave: true,
+      leave_type: type,
+      notes: document.getElementById('lv-notes').value.trim(),
+      assigned_by: document.getElementById('lv-approved').value.trim(),
+      time_spent_min: 0
+    });
+    closeModal('addLeaveLog');
+    toast('Leave logged ✓', 'ok');
+    ['lv-notes','lv-approved'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    loadWorkLog();
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+async function deleteWorkLog(id) {
+  if (!confirm('Delete this entry?')) return;
+  try { await sb.from('work_log').delete().eq('id', id); toast('Deleted', 'ok'); loadWorkLog(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+async function deleteFollowup(id) {
+  if (!confirm('Delete this follow-up?')) return;
+  try { await sb.from('followups').delete().eq('id', id); toast('Deleted', 'ok'); loadFollowups(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+async function markFollowupResponded(id) {
+  try { await sb.from('followups').update({ status: 'responded' }).eq('id', id); toast('Marked responded ✓', 'ok'); loadFollowups(); }
+  catch(e) { toast(e.message, 'err'); }
+}
+
+// Weekly Plan
+async function openModal_addWeeklyPlan_setup() {
+  const today = todayStr();
+  const d = new Date(today + 'T00:00:00');
+  const daysUntilNextMon = (8 - d.getDay()) % 7 || 7;
+  const nextMonDate = new Date(d);
+  nextMonDate.setDate(d.getDate() + daysUntilNextMon);
+  const nextWeekStart = nextMonDate.toLocaleDateString('en-CA');
+  const weekDates = getWeekDates(nextWeekStart);
+  const daysContainer = document.getElementById('weekly-plan-days');
+  daysContainer.innerHTML = weekDates.map((date, i) => `
+    <div style="padding:10px;background:var(--glass);border-radius:var(--radius-sm);">
+      <div style="font-weight:600;font-size:12px;color:var(--acc-l);margin-bottom:6px;">${fmtDate(date)}</div>
+      <textarea id="wp-day-${i}" rows="2" placeholder="Planned tasks for this day… (e.g. Script research 2hrs, YT rework 3hrs)" style="font-size:12px;"></textarea>
+    </div>`).join('');
+  // Suggestions from pipeline
+  const topics = cache.topics.length ? cache.topics : await dbGet('topics');
+  const active = topics.filter(t => t.pipeline_stage !== 'Published').slice(0, 5);
+  document.getElementById('weekly-plan-suggestions').innerHTML = active.map(t =>
+    `<div style="padding:3px 0;border-bottom:1px solid var(--gb);">• ${t.title} — <span style="color:var(--acc-l);">${t.pipeline_stage}</span></div>`
+  ).join('') || 'No active topics';
+  daysContainer.dataset.weekStart = nextWeekStart;
+}
+
+async function saveWeeklyPlan(share) {
+  const container = document.getElementById('weekly-plan-days');
+  const weekStart = container.dataset.weekStart;
+  const weekDates = getWeekDates(weekStart);
+  const planItems = weekDates.map((date, i) => ({
+    date,
+    day: DAYS[new Date(date + 'T00:00:00').getDay()],
+    tasks: document.getElementById(`wp-day-${i}`)?.value.trim() || ''
+  })).filter(item => item.tasks);
+  try {
+    await sb.from('weekly_plans').insert({ week_start: weekStart, week_end: weekDates[4], plan_items: planItems, shared_with_manager: share });
+    closeModal('addWeeklyPlan');
+    toast(share ? 'Plan saved & ready to share ✓' : 'Plan saved as draft ✓', 'ok');
+    if (share) showWeeklyPlanShare(planItems, weekStart);
+  } catch(e) { toast(e.message, 'err'); }
+}
+
+function showWeeklyPlanShare(planItems, weekStart) {
+  let text = `📅 NEXT WEEK PLAN — ${fmtDate(weekStart)}\n\n`;
+  planItems.forEach(item => { text += `${item.day} (${item.date})\n${item.tasks}\n\n`; });
+  text += `— Gaurav Mokal, Video Marketing`;
+  navigator.clipboard.writeText(text).then(() => toast('Plan copied to clipboard — paste in WhatsApp/email ✓', 'ok'));
+}
+
+// Weekly Report Generator
+async function generateWeeklyReport() {
+  const today = todayStr();
+  const weekStart = getWeekStart(today);
+  const weekDates = getWeekDates(weekStart);
+  try {
+    const [{ data: entries }, { data: followups }] = await Promise.all([
+      sb.from('work_log').select('*').gte('date', weekStart).lte('date', today).order('date'),
+      sb.from('followups').select('*').gte('date', weekStart).lte('date', today).order('date')
+    ]);
+    const allEntries = entries || [];
+    const allFollowups = followups || [];
+    const tasks = allEntries.filter(e => !e.is_leave && e.status === 'done');
+    const extra = allEntries.filter(e => e.task_type === 'extra');
+    const blocked = allEntries.filter(e => e.status === 'blocked');
+    const leaves = allEntries.filter(e => e.is_leave);
+    const totalMins = allEntries.filter(e => !e.is_leave).reduce((s,e) => s + (e.time_spent_min||0), 0);
+    const waitingFollowups = allFollowups.filter(f => f.status === 'waiting');
+
+    const reportHTML = `
+      <div style="font-family:inherit;">
+        <div style="text-align:center;padding:16px 0;border-bottom:1px solid var(--gb);margin-bottom:16px;">
+          <div style="font-size:18px;font-weight:800;">Weekly Work Report</div>
+          <div style="font-size:13px;color:var(--t2);">${fmtDate(weekStart)} → ${fmtDate(today)}</div>
+          <div style="font-size:13px;color:var(--t2);">Gaurav Mokal — Video Marketing</div>
+          <div style="font-size:20px;font-weight:700;color:var(--acc-l);margin-top:8px;">${fmtMins(totalMins)} logged</div>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--green);">✅ Completed this week (${tasks.length})</div>
+          ${tasks.map(e => `<div style="padding:5px 0;border-bottom:1px solid var(--gb);font-size:12px;display:flex;align-items:center;gap:8px;">
+            <span>${e.task_type==='extra'?'⭐':e.task_type==='meeting'?'🤝':'📋'}</span>
+            <span style="flex:1;">${e.title}${e.topic_title?' — '+e.topic_title:''}</span>
+            <span style="color:var(--t3);">${fmtMins(e.time_spent_min)}</span>
+            ${e.proof_link?`<a href="${e.proof_link}" target="_blank" style="color:var(--acc-l);font-size:10px;">↗</a>`:''}
+          </div>`).join('')}
+        </div>
+
+        ${extra.length ? `<div style="margin-bottom:16px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--amber);">⭐ Extra tasks assigned by others (${extra.length})</div>
+          ${extra.map(e => `<div style="padding:5px 0;border-bottom:1px solid var(--gb);font-size:12px;">
+            <span style="font-weight:500;">${e.title}</span> — assigned by <span style="color:var(--amber);">${e.assigned_by||'?'}</span> — ${fmtMins(e.time_spent_min)}
+          </div>`).join('')}
+        </div>` : ''}
+
+        ${blocked.length ? `<div style="margin-bottom:16px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--red);">🔴 Blocked items (${blocked.length})</div>
+          ${blocked.map(e => `<div style="padding:5px 0;border-bottom:1px solid var(--gb);font-size:12px;">
+            ${e.title} — <span style="color:var(--red);">Blocked by: ${e.blocked_by||'?'}</span>
+          </div>`).join('')}
+        </div>` : ''}
+
+        ${waitingFollowups.length ? `<div style="margin-bottom:16px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--blue);">📞 Pending follow-ups (${waitingFollowups.length})</div>
+          ${waitingFollowups.map(f => `<div style="padding:5px 0;border-bottom:1px solid var(--gb);font-size:12px;">
+            ${f.following_up_with}${f.topic_title?' re: '+f.topic_title:''} — ${f.channel} — ${fmtDate(f.date)} — waiting for response
+          </div>`).join('')}
+        </div>` : ''}
+
+        ${leaves.length ? `<div style="margin-bottom:16px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px;color:var(--t2);">🏖️ Leaves / Off days</div>
+          ${leaves.map(e => `<div style="font-size:12px;padding:4px 0;">${fmtDate(e.date)} — ${e.title}</div>`).join('')}
+        </div>` : ''}
+      </div>`;
+
+    document.getElementById('weekly-report-content').innerHTML = reportHTML;
+    openModal('weeklyReport');
+    // Store for copy
+    window._lastReport = { tasks, extra, blocked, waitingFollowups, leaves, totalMins, weekStart, today };
+  } catch(e) { toast('Report error: ' + e.message, 'err'); }
+}
+
+function copyWeeklyReport() {
+  const r = window._lastReport;
+  if (!r) return;
+  let text = `WEEKLY WORK REPORT\n${fmtDate(r.weekStart)} → ${fmtDate(r.today)}\nGaurav Mokal — Video Marketing\nTotal: ${fmtMins(r.totalMins)}\n\n`;
+  text += `✅ COMPLETED (${r.tasks.length})\n`;
+  r.tasks.forEach(e => { text += `• ${e.title}${e.topic_title?' — '+e.topic_title:''} (${fmtMins(e.time_spent_min)})\n`; });
+  if (r.extra.length) { text += `\n⭐ EXTRA TASKS\n`; r.extra.forEach(e => { text += `• ${e.title} — by ${e.assigned_by||'?'} (${fmtMins(e.time_spent_min)})\n`; }); }
+  if (r.blocked.length) { text += `\n🔴 BLOCKED\n`; r.blocked.forEach(e => { text += `• ${e.title} — ${e.blocked_by||'?'}\n`; }); }
+  if (r.waitingFollowups.length) { text += `\n📞 PENDING FOLLOWUPS\n`; r.waitingFollowups.forEach(f => { text += `• ${f.following_up_with}${f.topic_title?' re: '+f.topic_title:''} — ${f.channel}\n`; }); }
+  navigator.clipboard.writeText(text).then(() => toast('Copied ✓', 'ok'));
+}
+
+// Hook into openModal for weekly plan setup
+const _origOpenModal = openModal;
+function openModal(name) {
+  _origOpenModal(name);
+  if (name === 'addWeeklyPlan') openModal_addWeeklyPlan_setup();
+  if (name === 'addWorkLog') {
+    const el = document.getElementById('wl-date');
+    if (el && !el.value) el.value = todayStr();
+    toggleWorkLogFields();
+  }
+  if (name === 'addFollowup') { const el = document.getElementById('fu-date'); if (el && !el.value) el.value = todayStr(); }
+  if (name === 'addLeaveLog') { const el = document.getElementById('lv-date'); if (el && !el.value) el.value = todayStr(); }
+}
 function enforceWrite() {
   if (!canDo('write')) { toast('You don\'t have permission to do this', 'err'); throw new Error('Permission denied'); }
 }
