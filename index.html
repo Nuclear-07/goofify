@@ -2490,9 +2490,9 @@ function copyWeeklyReport() {
 }
 
 // Hook into openModal for weekly plan setup
-const _origOpenModal = openModal;
+const _origOpenModalBase = openModal;
 function openModal(name) {
-  _origOpenModal(name);
+  document.getElementById('modal-'+name)?.classList.add('open');
   if (name === 'addWeeklyPlan') openModal_addWeeklyPlan_setup();
   if (name === 'addWorkLog') {
     const el = document.getElementById('wl-date');
