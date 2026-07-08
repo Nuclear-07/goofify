@@ -1099,7 +1099,7 @@ select option{background:#1a1a2e;color:#fff;}
         </div>
       </div>
       <div class="form-group"><div class="form-label">Status</div>
-        <select id="wl-status">
+        <select id="wl-status" onchange="document.getElementById('wl-blocked-field').style.display=this.value==='blocked'?'block':'none'">
           <option value="done">✅ Done</option>
           <option value="inprogress">⏳ In Progress</option>
           <option value="blocked">🔴 Blocked</option>
@@ -1727,7 +1727,6 @@ async function loadRework(){
   }catch(e){toast('Rework: '+e.message,'err');}
 }
 async function updateReworkStatus(id,status){try{await dbUpdate('rework_queue',id,{status});toast('Updated ✓','ok');loadRework();}catch(e){toast(e.message,'err');}}
-async function deleteRework(id){if(!confirm('Delete?'))return;try{await dbDelete('rework_queue',id);toast('Deleted','ok');loadRework();}catch(e){toast(e.message,'err');}}
 
 // ============================================================
 //  ANALYTICS
@@ -1749,7 +1748,6 @@ async function loadAnalytics(){
     document.getElementById('analytics-body').innerHTML=pfData.length?[...pfData].reverse().map(r=>`<tr><td style="font-weight:500;">${r.video_title}</td><td>${pfBadge(r.platform)}</td><td>${fmt(r.views)}</td><td>${r.watch_time_hrs||'—'}h</td><td><span class="badge ${Number(r.ctr)>=2.5?'badge-green':Number(r.ctr)>=1.5?'badge-amber':'badge-red'}">${r.ctr||'—'}%</span></td><td>+${fmt(r.subscribers_gained)}</td><td style="color:var(--t3);">${(r.date||'').split('T')[0]}</td><td>${canDo('delete')?`<button class="btn btn-sm btn-danger btn-icon" onclick="deleteAnalyticsRow('${r.id}')">✕</button>`:''}</td></tr>`).join(''):`<tr><td colspan="8"><div class="empty"><p>No ${ANALYTICS_PLATFORM} stats logged yet</p></div></td></tr>`;
   }catch(e){toast('Analytics: '+e.message,'err');}
 }
-async function deleteAnalyticsRow(id){if(!confirm('Delete?'))return;try{await dbDelete('yt_analytics',id);toast('Deleted','ok');loadAnalytics();}catch(e){toast(e.message,'err');}}
 
 // ============================================================
 //  SHORTS (Supabase backed)
@@ -1779,13 +1777,18 @@ function renderShorts(data){
   body.innerHTML=data.length?data.map(s=>`<tr><td style="font-weight:500;max-width:180px;">${s.title}</td><td style="color:var(--t3);font-size:12px;">${s.source||'—'}</td><td><span style="font-size:11px;color:var(--t2);">${(s.caption||'').substring(0,40)}${(s.caption||'').length>40?'...':''}</span></td><td><span class="badge ${s.yt_status==='Published'?'badge-red':'badge-gray'}">${s.yt_status==='Published'?'▶ Published':'Pending'}</span>${s.yt_link?`<a href="${s.yt_link}" target="_blank" style="margin-left:4px;font-size:10px;color:var(--acc-l);">↗</a>`:''}</td><td><span class="badge ${s.reel_status==='Published'?'badge-pink':'badge-gray'}">${s.reel_status==='Published'?'📸 Published':'Pending'}</span>${s.reel_link?`<a href="${s.reel_link}" target="_blank" style="margin-left:4px;font-size:10px;color:var(--acc-l);">↗</a>`:''}</td><td style="white-space:nowrap;"><button class="btn btn-sm" onclick="openEditShort('${s.id}')">Edit</button>${canDo('delete')?`<button class="btn btn-sm btn-danger" onclick="deleteShort('${s.id}')" style="margin-left:4px;">✕</button>`:''}</td></tr>`).join(''):`<tr><td colspan="6"><div class="empty"><p>No shorts added yet</p></div></td></tr>`;
 }
 async function submitShort(){
+  try{enforceWrite();}catch(e){return;}
   const title=document.getElementById('sh-title').value.trim();if(!title){toast('Enter a title','err');return;}
   try{await dbInsert('shorts',{title,source:document.getElementById('sh-source').value.trim(),caption:document.getElementById('sh-caption').value.trim(),yt_status:document.getElementById('sh-yt-status').value,yt_link:document.getElementById('sh-yt-link').value.trim(),reel_status:document.getElementById('sh-reel-status').value,reel_link:document.getElementById('sh-reel-link').value.trim()});
   closeModal('addShort');toast('Short added ✓','ok');['sh-title','sh-source','sh-caption','sh-yt-link','sh-reel-link'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});loadShorts();}catch(e){toast(e.message,'err');}
 }
 function openEditShort(id){const s=cache.shorts.find(x=>x.id===id);if(!s)return;document.getElementById('edit-sh-id').value=id;document.getElementById('edit-sh-title-display').textContent=s.title;document.getElementById('edit-sh-caption').value=s.caption||'';document.getElementById('edit-sh-yt-status').value=s.yt_status||'Pending';document.getElementById('edit-sh-yt-link').value=s.yt_link||'';document.getElementById('edit-sh-reel-status').value=s.reel_status||'Pending';document.getElementById('edit-sh-reel-link').value=s.reel_link||'';openModal('editShort');}
-async function submitEditShort(){const id=document.getElementById('edit-sh-id').value;try{await dbUpdate('shorts',id,{caption:document.getElementById('edit-sh-caption').value,yt_status:document.getElementById('edit-sh-yt-status').value,yt_link:document.getElementById('edit-sh-yt-link').value,reel_status:document.getElementById('edit-sh-reel-status').value,reel_link:document.getElementById('edit-sh-reel-link').value});closeModal('editShort');toast('Updated ✓','ok');loadShorts();}catch(e){toast(e.message,'err');}}
-async function deleteShort(id){if(!confirm('Delete?'))return;try{await dbDelete('shorts',id);toast('Deleted','ok');loadShorts();}catch(e){toast(e.message,'err');}}
+async function submitEditShort(){try{enforceWrite();}catch(e){return;}const id=document.getElementById('edit-sh-id').value;try{await dbUpdate('shorts',id,{caption:document.getElementById('edit-sh-caption').value,yt_status:document.getElementById('edit-sh-yt-status').value,yt_link:document.getElementById('edit-sh-yt-link').value,reel_status:document.getElementById('edit-sh-reel-status').value,reel_link:document.getElementById('edit-sh-reel-link').value});closeModal('editShort');toast('Updated ✓','ok');loadShorts();}catch(e){toast(e.message,'err');}}
+async function deleteShort(id){try{enforceDelete();}catch(e){return;}if(!confirm('Delete?'))return;try{await dbDelete('shorts',id);toast('Deleted','ok');loadShorts();}catch(e){toast(e.message,'err');}}
+async function submitYTChannel(){try{enforceWrite();}catch(e){return;}const name=document.getElementById('ytc-name').value.trim();if(!name){toast('Enter channel name','err');return;}try{await dbInsert('yt_channels',{channel_name:name,channel_id:document.getElementById('ytc-id').value.trim(),client_name:document.getElementById('ytc-client').value.trim(),owner_email:document.getElementById('ytc-email').value.trim(),mode:document.getElementById('ytc-mode').value,notes:document.getElementById('ytc-notes').value.trim()});closeModal('addYTChannel');toast('Channel added ✓','ok');loadYTChannels();}catch(e){toast(e.message,'err');}}
+async function deleteYTChannel(id){try{enforceDelete();}catch(e){return;}if(!confirm('Delete?'))return;try{await dbDelete('yt_channels',id);toast('Deleted','ok');loadYTChannels();}catch(e){toast(e.message,'err');}}
+async function deleteRework(id){try{enforceDelete();}catch(e){return;}if(!confirm('Delete?'))return;try{await dbDelete('rework_queue',id);toast('Deleted','ok');loadRework();}catch(e){toast(e.message,'err');}}
+async function deleteAnalyticsRow(id){try{enforceDelete();}catch(e){return;}if(!confirm('Delete?'))return;try{await dbDelete('yt_analytics',id);toast('Deleted','ok');loadAnalytics();}catch(e){toast(e.message,'err');}}
 
 // ============================================================
 //  YT CHANNELS
@@ -1803,8 +1806,6 @@ async function loadYTChannels(){
     if(!waiting.length&&!complete.length)snapDiv.innerHTML='<div class="empty"><p>No before/after comparisons yet</p><small>Click "📸 Before" on any rework video</small></div>';
   }catch(e){toast('YT Channels: '+e.message,'err');}
 }
-async function submitYTChannel(){const name=document.getElementById('ytc-name').value.trim();if(!name){toast('Enter channel name','err');return;}try{await dbInsert('yt_channels',{channel_name:name,channel_id:document.getElementById('ytc-id').value.trim(),client_name:document.getElementById('ytc-client').value.trim(),owner_email:document.getElementById('ytc-email').value.trim(),mode:document.getElementById('ytc-mode').value,notes:document.getElementById('ytc-notes').value.trim()});closeModal('addYTChannel');toast('Channel added ✓','ok');loadYTChannels();}catch(e){toast(e.message,'err');}}
-async function deleteYTChannel(id){if(!confirm('Delete?'))return;try{await dbDelete('yt_channels',id);toast('Deleted','ok');loadYTChannels();}catch(e){toast(e.message,'err');}}
 
 function openBeforeSnapshot(reworkId,videoTitle){
   document.getElementById('snap-rework-id').value=reworkId;document.getElementById('snap-video-title').textContent=videoTitle;
@@ -1913,6 +1914,7 @@ function loadSettings() {
 //  SUBMIT HANDLERS
 // ============================================================
 async function submitTopic(){
+  try{enforceWrite();}catch(e){return;}
   const title=document.getElementById('t-title').value.trim();if(!title){toast('Enter a title','err');return;}
   const ct=document.getElementById('t-ct').value;
   try{await dbInsert('topics',{title,cluster:document.getElementById('t-cluster').value,seo_owner:document.getElementById('t-seo').value,leader:needsLeader(ct)?document.getElementById('t-leader').value:'',priority:document.getElementById('t-priority').value,target_duration:document.getElementById('t-dur').value,research_source:document.getElementById('t-src').value,notes:document.getElementById('t-notes').value,content_type:ct,platform:document.getElementById('t-platform').value,pipeline_stage:'Topic Received'});
@@ -1927,19 +1929,19 @@ function quickEdit(id,title,stage,priority,ct,pf,ytPub,ytDate,ytLink,liPub,liDat
 }
 
 async function submitEditTopic(){
+  try{enforceWrite();}catch(e){return;}
   try{await dbUpdate('topics',document.getElementById('edit-t-id').value,{pipeline_stage:document.getElementById('edit-stage').value,priority:document.getElementById('edit-priority').value,content_type:document.getElementById('edit-ct').value,platform:document.getElementById('edit-platform').value,yt_published:document.getElementById('edit-yt-pub').checked,yt_published_date:document.getElementById('edit-yt-date').value,yt_link:document.getElementById('edit-yt-link').value,linkedin_published:document.getElementById('edit-li-pub').checked,linkedin_published_date:document.getElementById('edit-li-date').value,linkedin_link:document.getElementById('edit-li-link').value,notes:document.getElementById('edit-notes').value,updated_at:new Date().toISOString()});
   closeModal('editTopic');toast('Updated ✓','ok');loadView(CURRENT_VIEW);}catch(e){toast(e.message,'err');}
 }
 
-async function deleteTopic(id){if(!confirm('Delete topic?'))return;try{await dbDelete('topics',id);toast('Deleted','ok');loadTopics();}catch(e){toast(e.message,'err');}}
+async function deleteTopic(id){try{enforceDelete();}catch(e){return;}if(!confirm('Delete topic?'))return;try{await dbDelete('topics',id);toast('Deleted','ok');loadTopics();}catch(e){toast(e.message,'err');}}
 
-
-async function submitRework(){try{await dbInsert('rework_queue',{video_title:document.getElementById('rw-title').value,platform:document.getElementById('rw-platform').value,views_at_rework:document.getElementById('rw-views').value||0,ctr_at_rework:document.getElementById('rw-ctr').value||0,avg_watch_time:document.getElementById('rw-wt').value,scheduled_rework_day:document.getElementById('rw-day').value,yt_link:document.getElementById('rw-link').value,status:'Queued'});closeModal('addRework');toast('Added ✓','ok');loadRework();}catch(e){toast(e.message,'err');}}
-async function submitAnalytics(){try{await dbInsert('yt_analytics',{video_title:document.getElementById('an-title').value,platform:document.getElementById('an-platform').value,views:document.getElementById('an-views').value||0,watch_time_hrs:document.getElementById('an-wt').value||0,ctr:document.getElementById('an-ctr').value||0,subscribers_gained:document.getElementById('an-subs').value||0,date:document.getElementById('an-date').value});closeModal('addAnalytics');toast('Stats logged ✓','ok');loadAnalytics();}catch(e){toast(e.message,'err');}}
+async function submitRework(){try{enforceWrite();}catch(e){return;}try{await dbInsert('rework_queue',{video_title:document.getElementById('rw-title').value,platform:document.getElementById('rw-platform').value,views_at_rework:document.getElementById('rw-views').value||0,ctr_at_rework:document.getElementById('rw-ctr').value||0,avg_watch_time:document.getElementById('rw-wt').value,scheduled_rework_day:document.getElementById('rw-day').value,yt_link:document.getElementById('rw-link').value,status:'Queued'});closeModal('addRework');toast('Added ✓','ok');loadRework();}catch(e){toast(e.message,'err');}}
+async function submitAnalytics(){try{enforceWrite();}catch(e){return;}try{await dbInsert('yt_analytics',{video_title:document.getElementById('an-title').value,platform:document.getElementById('an-platform').value,views:document.getElementById('an-views').value||0,watch_time_hrs:document.getElementById('an-wt').value||0,ctr:document.getElementById('an-ctr').value||0,subscribers_gained:document.getElementById('an-subs').value||0,date:document.getElementById('an-date').value});closeModal('addAnalytics');toast('Stats logged ✓','ok');loadAnalytics();}catch(e){toast(e.message,'err');}}
 async function submitCluster(){try{await dbInsert('clusters',{name:document.getElementById('cl-name').value,color:document.getElementById('cl-color').value,description:document.getElementById('cl-desc').value});closeModal('addCluster');toast('Added ✓','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
-async function deleteCluster(id){if(!confirm('Delete?'))return;try{await dbDelete('clusters',id);toast('Deleted','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
+async function deleteCluster(id){try{enforceDelete();}catch(e){return;}if(!confirm('Delete?'))return;try{await dbDelete('clusters',id);toast('Deleted','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
 async function submitStage(){try{await dbInsert('pipeline_stages',{name:document.getElementById('st-name').value,icon:document.getElementById('st-icon').value,color:document.getElementById('st-color').value,order:document.getElementById('st-order').value});closeModal('addStage');toast('Added ✓','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
-async function deleteStage(id){if(!confirm('Delete?'))return;try{await dbDelete('pipeline_stages',id);toast('Deleted','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
+async function deleteStage(id){try{enforceDelete();}catch(e){return;}if(!confirm('Delete?'))return;try{await dbDelete('pipeline_stages',id);toast('Deleted','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
 async function submitSeo(){try{await dbInsert('seo_team',{name:document.getElementById('seo-name').value,cluster:document.getElementById('seo-cluster').value,email:document.getElementById('seo-email').value});closeModal('addSeo');toast('Added ✓','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
 async function deleteSeo(id){if(!confirm('Delete?'))return;try{await dbDelete('seo_team',id);toast('Deleted','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
 async function submitLeader(){try{await dbInsert('leaders',{name:document.getElementById('l-name').value,role:document.getElementById('l-role').value,availability:document.getElementById('l-avail').value,free_slots:document.getElementById('l-slots').value,email:document.getElementById('l-email').value});closeModal('addLeader');toast('Added ✓','ok');loadAdmin();loadAll();}catch(e){toast(e.message,'err');}}
@@ -1989,8 +1991,15 @@ async function checkSmartAlerts(){
 // ============================================================
 //  MODAL HELPERS
 // ============================================================
-function openModal(name){document.getElementById('modal-'+name)?.classList.add('open');}
 function closeModal(name){document.getElementById('modal-'+name)?.classList.remove('open');}
+function openModal(name){
+  document.getElementById('modal-'+name)?.classList.add('open');
+  // Work Log modal setup
+  if(name==='addWeeklyPlan') openModal_addWeeklyPlan_setup();
+  if(name==='addWorkLog'){const el=document.getElementById('wl-date');if(el&&!el.value)el.value=todayStr();toggleWorkLogFields();}
+  if(name==='addFollowup'){const el=document.getElementById('fu-date');if(el&&!el.value)el.value=todayStr();}
+  if(name==='addLeaveLog'){const el=document.getElementById('lv-date');if(el&&!el.value)el.value=todayStr();}
+}
 document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
 
 // ============================================================
@@ -2247,14 +2256,7 @@ function toggleWorkLogFields() {
   document.getElementById('wl-meeting-fields').style.display = type === 'meeting' ? 'block' : 'none';
 }
 
-// Watch status change to show blocked field
-document.addEventListener('DOMContentLoaded', () => {
-  const statusEl = document.getElementById('wl-status');
-  if (statusEl) statusEl.addEventListener('change', () => {
-    const blocked = document.getElementById('wl-blocked-field');
-    if (blocked) blocked.style.display = statusEl.value === 'blocked' ? 'block' : 'none';
-  });
-});
+// wl-status change handled via onchange in HTML
 
 async function submitWorkLog() {
   const title = document.getElementById('wl-title').value.trim();
@@ -2489,57 +2491,16 @@ function copyWeeklyReport() {
   navigator.clipboard.writeText(text).then(() => toast('Copied ✓', 'ok'));
 }
 
-// Hook into openModal for weekly plan setup
-const _origOpenModalBase = openModal;
-function openModal(name) {
-  document.getElementById('modal-'+name)?.classList.add('open');
-  if (name === 'addWeeklyPlan') openModal_addWeeklyPlan_setup();
-  if (name === 'addWorkLog') {
-    const el = document.getElementById('wl-date');
-    if (el && !el.value) el.value = todayStr();
-    toggleWorkLogFields();
-  }
-  if (name === 'addFollowup') { const el = document.getElementById('fu-date'); if (el && !el.value) el.value = todayStr(); }
-  if (name === 'addLeaveLog') { const el = document.getElementById('lv-date'); if (el && !el.value) el.value = todayStr(); }
-}
+// ============================================================
+//  PERMISSIONS ENFORCEMENT (built directly, no _orig pattern)
+// ============================================================
 function enforceWrite() {
   if (!canDo('write')) { toast('You don\'t have permission to do this', 'err'); throw new Error('Permission denied'); }
 }
 function enforceDelete() {
   if (!canDo('delete')) { toast('You don\'t have permission to delete', 'err'); throw new Error('Permission denied'); }
 }
-// Wrap all submit/delete functions with permission checks
-const _origSubmitTopic = submitTopic;
-async function submitTopic() { try { enforceWrite(); } catch(e) { return; } await _origSubmitTopic(); }
-const _origSubmitEditTopic = submitEditTopic;
-async function submitEditTopic() { try { enforceWrite(); } catch(e) { return; } await _origSubmitEditTopic(); }
-const _origDeleteTopic = deleteTopic;
-async function deleteTopic(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteTopic(id); }
-const _origSubmitRework = submitRework;
-async function submitRework() { try { enforceWrite(); } catch(e) { return; } await _origSubmitRework(); }
-const _origDeleteRework = deleteRework;
-async function deleteRework(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteRework(id); }
-const _origSubmitAnalytics = submitAnalytics;
-async function submitAnalytics() { try { enforceWrite(); } catch(e) { return; } await _origSubmitAnalytics(); }
-const _origDeleteAnalyticsRow = deleteAnalyticsRow;
-async function deleteAnalyticsRow(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteAnalyticsRow(id); }
-const _origSubmitShort = submitShort;
-async function submitShort() { try { enforceWrite(); } catch(e) { return; } await _origSubmitShort(); }
-const _origSubmitEditShort = submitEditShort;
-async function submitEditShort() { try { enforceWrite(); } catch(e) { return; } await _origSubmitEditShort(); }
-const _origDeleteShort = deleteShort;
-async function deleteShort(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteShort(id); }
-const _origSubmitYTChannel = submitYTChannel;
-async function submitYTChannel() { try { enforceWrite(); } catch(e) { return; } await _origSubmitYTChannel(); }
-const _origDeleteYTChannel = deleteYTChannel;
-async function deleteYTChannel(id) { try { enforceDelete(); } catch(e) { return; } await _origDeleteYTChannel(id); }
-const _origConfirmDeleteScript = confirmDeleteScript;
-async function confirmDeleteScript() { try { enforceDelete(); } catch(e) { return; } await _origConfirmDeleteScript(); }
 let notesFilter = 'all', selectedNoteColor = '#6366f1', selectedNoteType = 'idea';
-
-const VIEW_TITLES_EXTRA = { notes: 'Notes & Ideas' };
-const _origViewTitles = VIEW_TITLES;
-Object.assign(VIEW_TITLES, VIEW_TITLES_EXTRA);
 
 async function loadNotes() {
   try {
@@ -3073,9 +3034,9 @@ async function refreshCalendarSlots() {
   await loadLeaderCalendarAvailability(leaders, date);
 }
 
-// Override submitShoot to create calendar event
-const _origSubmitShoot = submitShoot;
+// submitShoot with calendar integration
 async function submitShoot() {
+  try { enforceWrite(); } catch(e) { return; }
   const checkedTopics = [...document.querySelectorAll('#shoot-topics-picker input:checked')].map(cb => cb.value);
   const leader = document.getElementById('s-leader').value;
   const date = document.getElementById('s-date').value;
@@ -3096,7 +3057,6 @@ async function submitShoot() {
     }
     closeModal('addShoot');
     toast('Scheduled ✓', 'ok');
-    // Create calendar event if connected
     if (slot && date) await createShootCalendarEvent(leader, date, slot, topicTitles);
     loadShoots();
   } catch(e) { toast(e.message, 'err'); }
