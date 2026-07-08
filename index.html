@@ -1189,6 +1189,9 @@ async function enterApp() {
   document.getElementById('settings-role').innerHTML = roleBadge(USER_ROLE);
   const showAdmin = USER_ROLE === 'superadmin' || USER_ROLE === 'admin';
   document.getElementById('admin-nav').style.display = showAdmin ? 'block' : 'none';
+  // Users & Roles — Super Admin only
+  const usersNav = document.getElementById('nav-users');
+  if (usersNav) usersNav.style.display = USER_ROLE === 'superadmin' ? 'flex' : 'none';
   document.getElementById('add-topic-btn').style.display = canDo('write') ? 'inline-flex' : 'none';
   // Hide all + Add / Schedule buttons for guest/read-only users
   document.querySelectorAll('.btn-primary').forEach(btn => {
@@ -1286,7 +1289,9 @@ document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){
 // ============================================================
 const VIEW_TITLES={dashboard:'Dashboard',pipeline:'Content pipeline',topics:'Topic inbox',shoots:'Shoot planner',scripts:'Scripts & uploads',drive:'Drive tree',rework:'Rework tracker',analytics:'Analytics — YT & LinkedIn',ytchannels:'YouTube Channels & Before/After',shorts:'Shorts & Reels',reports:'Reports',users:'Users & Roles',admin:'Admin panel',settings:'Settings',notes:'Notes & Ideas'};
 function nav(name){
-  if(!canAccess(name)&&name!=='settings'&&name!=='admin'&&name!=='users'){toast('No access to this section','info');return;}
+  if(!canAccess(name)&&name!=='settings'&&name!=='admin'){toast('No access to this section','info');return;}
+  // Users & Roles — Super Admin only
+  if(name==='users'&&USER_ROLE!=='superadmin'){toast('Only Super Admin can manage users','info');return;}
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('view-'+name)?.classList.add('active');
